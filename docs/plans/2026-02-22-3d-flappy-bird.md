@@ -435,3 +435,33 @@ Provide the video path found in Task 4 and ask Gemini to verify:
 
 - If PASS: game works as expected.
 - If FAIL: check specific issues noted by Gemini and fix in `index.html`, then re-run Task 4.
+
+---
+
+## Post-Plan Changes (applied after initial implementation)
+
+### Cyberpunk Reskin
+- Dark background `0x050010`, neon cyan bird, magenta pipe rings, city skyline, CRT scanlines
+- Share Tech Mono font, neon point lights (cyan + magenta)
+
+### Explosion Animation on Collision
+- 24 neon particles spawn at bird position on hit
+- Bird hidden immediately; game-over overlay delayed 900ms so explosion plays out
+- `triggerGameOver()` keeps animation loop alive (no cancelAnimationFrame)
+- `tryRestart()` guards against restarting before overlay is shown
+
+### Obstacle Spawning Overhaul (spec: show many obstacles at depth with different gap heights)
+- `PIPE_SPACING = 5` (down from 7) for tighter corridor
+- `prefillPipes()` spawns 4 pipes at z=-3,-8,-13,-18 at game start and restart
+- Pipe height increased 8→12, cap ring radius 0.65→2.0 for far-depth visibility
+- Gap height uses cycling pattern `[0.5, 3.0, -3.0, 1.5, -1.5]` instead of pure random
+  - Guarantees: first gap is near center (reachable from y=0), then alternates top/bottom/etc.
+  - `pipeCount` resets on `restartGame()` for consistent ordering
+- Bird boundary unchanged: ±6; safe yOffset max: ±3.5 (gap half-width 2.5 + boundary 6)
+
+**Gemini-2.5-flash verified (commit eb09ff2):**
+- 3 pipe obstacles visible simultaneously at different distances ✓
+- Gap heights vary from bottom-third to top-third of screen ✓
+- Bird flaps upward on click ✓
+- Neon particle explosion on collision ✓
+- Stable gameplay loop ✓
