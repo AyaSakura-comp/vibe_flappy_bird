@@ -216,6 +216,58 @@
       birdGroup.add(wing);
     });
 
+    // ── Explosion particles ──────────────────────────────────────────────────
+    const EXPLOSION_COLORS = [0x00ffff, 0xff00aa, 0xffffff, 0xff6600, 0xffff00];
+    const particles = []; // { mesh, vx, vy, vz, life, maxLife }
+
+    function spawnExplosion(x, y, z) {
+      for (let i = 0; i < 24; i++) {
+        const size = 0.06 + Math.random() * 0.12;
+        const geo  = new THREE.BoxGeometry(size, size, size);
+        const mat  = new THREE.MeshBasicMaterial({
+          color: EXPLOSION_COLORS[Math.floor(Math.random() * EXPLOSION_COLORS.length)],
+          transparent: true,
+          opacity: 1,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+
+        // Random outward velocity
+        const speed = 0.08 + Math.random() * 0.18;
+        const theta = Math.random() * Math.PI * 2;
+        const phi   = (Math.random() - 0.5) * Math.PI;
+        particles.push({
+          mesh,
+          vx: Math.cos(theta) * Math.cos(phi) * speed,
+          vy: Math.sin(phi) * speed + 0.04,
+          vz: Math.sin(theta) * Math.cos(phi) * speed * 0.4,
+          life: 0,
+          maxLife: 45 + Math.random() * 20, // frames
+        });
+      }
+    }
+
+    function updateExplosion(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life += dt;
+        const t = p.life / p.maxLife;
+        if (t >= 1) {
+          scene.remove(p.mesh);
+          particles.splice(i, 1);
+          continue;
+        }
+        p.mesh.position.x += p.vx * dt;
+        p.mesh.position.y += p.vy * dt;
+        p.mesh.position.z += p.vz * dt;
+        p.vy -= 0.006 * dt; // mini gravity on particles
+        p.mesh.material.opacity = 1 - t;
+        const scale = 1 - t * 0.5;
+        p.mesh.scale.setScalar(scale);
+      }
+    }
+
     // ── Game state ───────────────────────────────────────────────────────────
     const GRAVITY    = 0.004;
     const FLAP       = -0.15;
@@ -302,13 +354,19 @@
       velocity = FLAP;
     }
 
+    function tryRestart() {
+      // Only allow restart after the SYSTEM FAILURE overlay is actually visible
+      // (i.e. after the 900ms explosion delay). This lets the explosion play out.
+      if (gameOver && !overlayEl.classList.contains('hidden')) restartGame();
+    }
+
     document.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        gameOver ? restartGame() : handleInput();
+        gameOver ? tryRestart() : handleInput();
       }
     });
-    document.addEventListener('click', () => gameOver ? restartGame() : handleInput());
+    document.addEventListener('click', () => gameOver ? tryRestart() : handleInput());
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -319,16 +377,30 @@
     // ── Game over / restart ───────────────────────────────────────────────────
     function triggerGameOver() {
       gameOver = true;
-      cancelAnimationFrame(animId);
-      animId = null;
-      overlayTitle.textContent = 'SYSTEM FAILURE';
-      overlayMsg.textContent   = '[ SCORE: ' + score + ' ]  //  CLICK TO REBOOT';
-      overlayEl.classList.remove('hidden');
+      // Loop keeps running to animate the explosion — do NOT cancel animId here
+      // Spawn explosion at bird position and hide bird
+      spawnExplosion(
+        birdGroup.position.x,
+        birdGroup.position.y,
+        birdGroup.position.z
+      );
+      birdGroup.visible = false;
+      // Keep loop running to animate explosion, show overlay after delay
+      const finalScore = score;
+      setTimeout(() => {
+        overlayTitle.textContent = 'SYSTEM FAILURE';
+        overlayMsg.textContent   = '[ SCORE: ' + finalScore + ' ]  //  CLICK TO REBOOT';
+        overlayEl.classList.remove('hidden');
+      }, 900);
     }
 
     function restartGame() {
       pipes.forEach(p => scene.remove(p.group));
       pipes.length = 0;
+      // Clear any leftover explosion particles
+      particles.forEach(p => scene.remove(p.mesh));
+      particles.length = 0;
+      birdGroup.visible = true;
       birdGroup.position.set(0, 0, 0);
       birdGroup.rotation.z = 0;
       velocity = 0; score = 0; started = false; gameOver = false;
@@ -338,9 +410,8 @@
       overlayEl.classList.remove('hidden');
       spawnPipe();
       lastSpawn = performance.now();
-      if (animId !== null) cancelAnimationFrame(animId);
+      // Loop is already running (kept alive during explosion); just reset prevTime
       prevTime = performance.now();
-      animId = requestAnimationFrame(loop);
     }
 
     // ── Animation loop ────────────────────────────────────────────────────────
@@ -391,6 +462,9 @@
           triggerGameOver(); return;
         }
       }
+
+      // Update explosion particles (runs even during game over)
+      updateExplosion(dt);
 
       // Animate neon lights
       cyanLight.intensity    = 1.5 + Math.sin(now * 0.003) * 0.3;
