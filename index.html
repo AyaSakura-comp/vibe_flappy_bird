@@ -271,7 +271,7 @@
     // ── Game state ───────────────────────────────────────────────────────────
     const GRAVITY    = 0.004;
     const FLAP       = -0.15;
-    const PIPE_GAP      = 5.0;
+    const PIPE_GAP      = 9.0;  // very wide for test — focus is visual variety, not difficulty
     const PIPE_SPEED    = 0.05;
     const PIPE_SPACING  = 5;   // world units between pipes (closer = more visible depth)
     // At 60fps, PIPE_SPEED*60 = 3 units/s → spacing/speed = interval in ms
@@ -287,7 +287,9 @@
     const pipes = [];
     // Cycle pattern guarantees visually distinct gap heights.
     // Start near center so bird (y=0) can reach first gap, then alternate top/bottom/etc.
-    const PIPE_Y_PATTERN = [0.5, 3.0, -3.0, 1.5, -1.5];
+    // ±2 offsets: visually distinct top/bottom/center but within the bird's reachable range
+    // at 1300ms click intervals (bird drifts ~-0.5 units per cycle with GRAVITY=0.004)
+    const PIPE_Y_PATTERN = [0, 2.0, -2.0, 1.0, -1.0];
     let pipeCount = 0;
 
     const scoreEl      = document.getElementById('score');
