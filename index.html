@@ -271,9 +271,11 @@
     // ── Game state ───────────────────────────────────────────────────────────
     const GRAVITY    = 0.004;
     const FLAP       = -0.15;
-    const PIPE_GAP   = 5.0;
-    const PIPE_SPEED = 0.05;
-    const SPAWN_MS   = 3000;
+    const PIPE_GAP      = 5.0;
+    const PIPE_SPEED    = 0.05;
+    const PIPE_SPACING  = 5;   // world units between pipes (closer = more visible depth)
+    // At 60fps, PIPE_SPEED*60 = 3 units/s → spacing/speed = interval in ms
+    const SPAWN_MS      = Math.round(PIPE_SPACING / (PIPE_SPEED * 60) * 1000); // ≈1667ms
 
     let velocity  = 0;
     let score     = 0;
@@ -283,6 +285,10 @@
     let lastSpawn = 0;
 
     const pipes = [];
+    // Cycle pattern guarantees visually distinct gap heights.
+    // Start near center so bird (y=0) can reach first gap, then alternate top/bottom/etc.
+    const PIPE_Y_PATTERN = [0.5, 3.0, -3.0, 1.5, -1.5];
+    let pipeCount = 0;
 
     const scoreEl      = document.getElementById('score');
     const overlayEl    = document.getElementById('overlay');
@@ -293,23 +299,23 @@
     function makePipeSegment(height) {
       const group = new THREE.Group();
 
-      // Dark metallic column
-      const cylGeo = new THREE.CylinderGeometry(0.5, 0.5, height, 8);
+      // Dark metallic column — wider so it's visible at depth
+      const cylGeo = new THREE.CylinderGeometry(1.0, 1.0, height, 12);
       const cylMat = new THREE.MeshPhongMaterial({
-        color: 0x1a0033,
-        emissive: 0x110022,
+        color: 0x2a0044,
+        emissive: 0x220033,
         shininess: 60,
       });
       group.add(new THREE.Mesh(cylGeo, cylMat));
 
-      // Neon magenta glowing ring cap
-      const capGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.18, 16);
+      // Neon magenta glowing ring cap — very large so gap position is unmistakable at depth
+      const capGeo = new THREE.CylinderGeometry(2.0, 2.0, 0.4, 16);
       const capMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
       const cap    = new THREE.Mesh(capGeo, capMat);
       group.add(cap);
 
       // Inner ring accent (cyan)
-      const innerGeo = new THREE.CylinderGeometry(0.52, 0.52, 0.08, 16);
+      const innerGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.16, 16);
       const innerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
       const inner    = new THREE.Mesh(innerGeo, innerMat);
       group.add(inner);
@@ -317,23 +323,25 @@
       return { group, cap, inner };
     }
 
-    function spawnPipe() {
-      const yOffset = (Math.random() - 0.5) * 0.4;
+    function spawnPipe(spawnZ = -18) {
+      // Cycle top/bottom/center-high/center-low with small jitter for guaranteed variety
+      const yOffset = PIPE_Y_PATTERN[pipeCount % 4] + (Math.random() - 0.5) * 0.6;
+      pipeCount++;
       const gapTop  = yOffset + PIPE_GAP / 2;
       const gapBot  = yOffset - PIPE_GAP / 2;
 
       const pipeGroup = new THREE.Group();
-      pipeGroup.position.set(0, 0, -6);
+      pipeGroup.position.set(0, 0, spawnZ);
       scene.add(pipeGroup);
 
-      const topHeight = 8;
+      const topHeight = 12;  // taller = gap contrast more visible at depth
       const { group: topGroup, cap: topCap, inner: topInner } = makePipeSegment(topHeight);
       topGroup.position.y = gapTop + topHeight / 2;
       topCap.position.y   = -topHeight / 2;
       topInner.position.y = -topHeight / 2;
       pipeGroup.add(topGroup);
 
-      const botHeight = 8;
+      const botHeight = 12;
       const { group: botGroup, cap: botCap, inner: botInner } = makePipeSegment(botHeight);
       botGroup.position.y = gapBot - botHeight / 2;
       botCap.position.y   = botHeight / 2;
@@ -403,12 +411,12 @@
       birdGroup.visible = true;
       birdGroup.position.set(0, 0, 0);
       birdGroup.rotation.z = 0;
-      velocity = 0; score = 0; started = false; gameOver = false;
+      velocity = 0; score = 0; started = false; gameOver = false; pipeCount = 0;
       scoreEl.textContent = '0';
       overlayTitle.textContent = 'CYBER FLAP';
       overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
       overlayEl.classList.remove('hidden');
-      spawnPipe();
+      prefillPipes();
       lastSpawn = performance.now();
       // Loop is already running (kept alive during explosion); just reset prevTime
       prevTime = performance.now();
@@ -450,7 +458,7 @@
           const pz = p.group.position.z;
           if (pz > -1.5 && pz < 1.5) {
             const by = birdGroup.position.y;
-            if (Math.abs(birdGroup.position.x) < 0.85) {
+            if (Math.abs(birdGroup.position.x) < 1.1) {
               if (by > p.gapTop + 0.2 || by < p.gapBot - 0.2) {
                 triggerGameOver(); return;
               }
@@ -474,7 +482,16 @@
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
-    spawnPipe();
+    // Pre-fill the view with pipes at evenly-spaced depths so the player sees
+    // a full corridor of obstacles from the start.
+    function prefillPipes() {
+      const farZ  = -18;  // 4 pipes at z=-3,-8,-13,-18 (spacing 5) fill the visible corridor
+      const nearZ =  -3;
+      for (let z = nearZ; z >= farZ; z -= PIPE_SPACING) {
+        spawnPipe(z);
+      }
+    }
+    prefillPipes();
     lastSpawn = performance.now();
     animId = requestAnimationFrame(loop);
   </script>
