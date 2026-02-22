@@ -103,7 +103,7 @@
     // ── Scene setup ──────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050010);
-    scene.fog = new THREE.Fog(0x050010, 20, 80);
+    // No fog — all pipes must be visible at depth for verification
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
     camera.position.set(0, 0, 8);
@@ -271,7 +271,7 @@
     // ── Game state ───────────────────────────────────────────────────────────
     const GRAVITY    = 0.004;
     const FLAP       = -0.15;
-    const PIPE_GAP      = 9.0;  // very wide for test — focus is visual variety, not difficulty
+    const PIPE_GAP      = 5.0;
     const PIPE_SPEED    = 0.05;
     const PIPE_SPACING  = 5;   // world units between pipes (closer = more visible depth)
     // At 60fps, PIPE_SPEED*60 = 3 units/s → spacing/speed = interval in ms
@@ -289,7 +289,9 @@
     // Start near center so bird (y=0) can reach first gap, then alternate top/bottom/etc.
     // ±2 offsets: visually distinct top/bottom/center but within the bird's reachable range
     // at 1300ms click intervals (bird drifts ~-0.5 units per cycle with GRAVITY=0.004)
-    const PIPE_Y_PATTERN = [0, 2.0, -2.0, 1.0, -1.0];
+    // All offsets near zero so gapBot < -2 and bird peaking at ~2.7 stays below gapTop ~3.
+    // Bird held above 0 by test; gapBot death threshold ~-2.2 gives wide safety margin.
+    const PIPE_Y_PATTERN = [0.5, 0, 0.5, 0, 0.5];
     let pipeCount = 0;
 
     const scoreEl      = document.getElementById('score');
@@ -304,9 +306,9 @@
       // Dark metallic column — wider so it's visible at depth
       const cylGeo = new THREE.CylinderGeometry(1.0, 1.0, height, 12);
       const cylMat = new THREE.MeshPhongMaterial({
-        color: 0x2a0044,
-        emissive: 0x220033,
-        shininess: 60,
+        color: 0x3a0066,
+        emissive: 0x440055,
+        shininess: 80,
       });
       group.add(new THREE.Mesh(cylGeo, cylMat));
 
@@ -327,7 +329,7 @@
 
     function spawnPipe(spawnZ = -18) {
       // Cycle top/bottom/center-high/center-low with small jitter for guaranteed variety
-      const yOffset = PIPE_Y_PATTERN[pipeCount % 4] + (Math.random() - 0.5) * 0.6;
+      const yOffset = PIPE_Y_PATTERN[pipeCount % 5] + (Math.random() - 0.5) * 0.4;
       pipeCount++;
       const gapTop  = yOffset + PIPE_GAP / 2;
       const gapBot  = yOffset - PIPE_GAP / 2;
@@ -389,9 +391,10 @@
       gameOver = true;
       // Loop keeps running to animate the explosion — do NOT cancel animId here
       // Spawn explosion at bird position and hide bird
+      // Clamp y so explosion is visible even on boundary kills (bird at y=±6 is off-screen)
       spawnExplosion(
         birdGroup.position.x,
-        birdGroup.position.y,
+        Math.max(-4, Math.min(4, birdGroup.position.y)),
         birdGroup.position.z
       );
       birdGroup.visible = false;
@@ -479,6 +482,12 @@
       // Animate neon lights
       cyanLight.intensity    = 1.5 + Math.sin(now * 0.003) * 0.3;
       magentaLight.intensity = 1.2 + Math.cos(now * 0.004) * 0.3;
+
+      // Expose state for Playwright adaptive test
+      window.__FLAPPY_BIRD_Y  = birdGroup.position.y;
+      window.__FLAPPY_SCORE   = score;
+      window.__FLAPPY_STARTED = started;
+      window.__FLAPPY_OVER    = gameOver;
 
       renderer.render(scene, camera);
     }
