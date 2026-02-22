@@ -3,22 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Flappy 3D</title>
+  <title>CYBER FLAP</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { overflow: hidden; background: #87CEEB; }
+    body { overflow: hidden; background: #050010; font-family: 'Share Tech Mono', 'Courier New', monospace; }
     canvas { display: block; }
+
+    /* CRT scanlines overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
 
     #ui {
       position: fixed;
-      top: 16px;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
-      color: white;
-      font-size: 28px;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      color: #00ffff;
+      font-size: 26px;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px #00ffff, 0 0 20px #00ffff, 0 0 40px #00aaff;
       pointer-events: none;
       z-index: 10;
     }
@@ -26,46 +45,65 @@
     #overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(5, 0, 20, 0.82);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 20;
-      color: white;
-      font-family: Arial, sans-serif;
+      color: #ff00aa;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
       text-align: center;
+      gap: 20px;
     }
 
-    #overlay.hidden {
-      display: none;
-    }
+    #overlay.hidden { display: none; }
 
     #overlay h1 {
-      font-size: 48px;
-      font-weight: bold;
-      text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-      margin-bottom: 16px;
+      font-size: 52px;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      color: #ff00aa;
+      text-shadow: 0 0 10px #ff00aa, 0 0 30px #ff00aa, 0 0 60px #ff0066;
+      animation: flicker 3s infinite;
     }
 
     #overlay p {
-      font-size: 22px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      font-size: 18px;
+      letter-spacing: 3px;
+      color: #00ffff;
+      text-shadow: 0 0 8px #00ffff, 0 0 20px #00aaff;
+      text-transform: uppercase;
+    }
+
+    #overlay .divider {
+      width: 300px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #ff00aa, transparent);
+    }
+
+    @keyframes flicker {
+      0%,95%,100% { opacity: 1; }
+      96% { opacity: 0.4; }
+      97% { opacity: 1; }
+      98% { opacity: 0.6; }
     }
   </style>
 </head>
 <body>
-  <div id="ui">Score: <span id="score">0</span></div>
+  <div id="ui">SCORE &nbsp; <span id="score">0</span></div>
   <div id="overlay">
-    <h1 id="overlay-title">Flappy 3D</h1>
-    <p id="overlay-msg">Press Space or Click to Start</p>
+    <h1 id="overlay-title">CYBER FLAP</h1>
+    <div class="divider"></div>
+    <p id="overlay-msg">[ CLICK OR SPACE TO JACK IN ]</p>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     // ── Scene setup ──────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB);
+    scene.background = new THREE.Color(0x050010);
+    scene.fog = new THREE.Fog(0x050010, 20, 80);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
     camera.position.set(0, 0, 8);
@@ -73,42 +111,110 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
+    // ── Lighting (dark + neon colored) ───────────────────────────────────────
+    scene.add(new THREE.AmbientLight(0x110022, 1.0));
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    dirLight.position.set(5, 10, 7);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
+    const cyanLight = new THREE.PointLight(0x00ffff, 1.5, 30);
+    cyanLight.position.set(-3, 2, 6);
+    scene.add(cyanLight);
 
-    // ── Ground ───────────────────────────────────────────────────────────────
-    const groundGeo = new THREE.PlaneGeometry(40, 200);
-    const groundMat = new THREE.MeshLambertMaterial({ color: 0x5aaf3c });
+    const magentaLight = new THREE.PointLight(0xff00aa, 1.2, 30);
+    magentaLight.position.set(3, -2, 4);
+    scene.add(magentaLight);
+
+    // ── Ground (dark neon grid) ───────────────────────────────────────────────
+    const groundGeo = new THREE.PlaneGeometry(40, 200, 20, 60);
+    const groundMat = new THREE.MeshBasicMaterial({
+      color: 0x0a0025,
+      wireframe: false,
+    });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.set(0, -5.5, -60);
+    ground.position.set(0, -6.2, -60);
     scene.add(ground);
 
-    // ── Bird ─────────────────────────────────────────────────────────────────
+    // Neon grid lines on ground using LineSegments
+    const gridHelper = new THREE.GridHelper(80, 40, 0xff00aa, 0x330066);
+    gridHelper.position.set(0, -6.19, -60);
+    scene.add(gridHelper);
+
+    // ── City skyline (background silhouette) ─────────────────────────────────
+    const buildingMat = new THREE.MeshBasicMaterial({ color: 0x080018 });
+    const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+
+    const buildingDefs = [
+      { x: -14, w: 3.0, h: 12, z: -45 },
+      { x: -10, w: 2.0, h:  8, z: -48 },
+      { x:  -7, w: 2.5, h: 16, z: -44 },
+      { x:  -4, w: 1.5, h:  7, z: -47 },
+      { x:  -1, w: 2.0, h: 10, z: -46 },
+      { x:   2, w: 2.5, h: 14, z: -45 },
+      { x:   5, w: 1.8, h:  9, z: -48 },
+      { x:   8, w: 3.0, h: 18, z: -43 },
+      { x:  12, w: 2.0, h:  7, z: -47 },
+      { x:  15, w: 2.5, h: 11, z: -45 },
+    ];
+
+    buildingDefs.forEach(({ x, w, h, z }) => {
+      const geo  = new THREE.BoxGeometry(w, h, 1);
+      const mesh = new THREE.Mesh(geo, buildingMat);
+      mesh.position.set(x, h / 2 - 6.2, z);
+      scene.add(mesh);
+
+      // Scatter a few lit windows
+      for (let i = 0; i < 6; i++) {
+        const wGeo  = new THREE.BoxGeometry(0.18, 0.18, 0.05);
+        const mat   = Math.random() > 0.5 ? windowMat : winMat2;
+        const win   = new THREE.Mesh(wGeo, mat);
+        win.position.set(
+          x + (Math.random() - 0.5) * (w - 0.4),
+          (Math.random() - 0.5) * (h - 0.4) + h / 2 - 6.2,
+          z + 0.55
+        );
+        scene.add(win);
+      }
+    });
+
+    // ── Bird (neon cyan drone) ────────────────────────────────────────────────
     const birdGroup = new THREE.Group();
     scene.add(birdGroup);
 
-    // Body
-    const bodyGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xFFD700 });
-    const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-    birdGroup.add(bodyMesh);
+    // Main body — flattened hexagonal drone hull
+    const bodyGeo = new THREE.BoxGeometry(0.55, 0.22, 0.38);
+    const bodyMat = new THREE.MeshPhongMaterial({
+      color: 0x003344,
+      emissive: 0x00ccff,
+      emissiveIntensity: 0.6,
+      shininess: 120,
+    });
+    birdGroup.add(new THREE.Mesh(bodyGeo, bodyMat));
 
-    // Eye (small black sphere on the front face, z+ side)
-    const eyeGeo = new THREE.SphereGeometry(0.07, 8, 8);
-    const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const eyeMesh = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeMesh.position.set(0.1, 0.08, 0.21);
-    birdGroup.add(eyeMesh);
+    // Neon cyan rim strip (front edge glow)
+    const rimGeo = new THREE.BoxGeometry(0.57, 0.06, 0.05);
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const rim    = new THREE.Mesh(rimGeo, rimMat);
+    rim.position.set(0, 0, 0.195);
+    birdGroup.add(rim);
+
+    // Neon magenta engine dot (back)
+    const engGeo = new THREE.SphereGeometry(0.07, 8, 8);
+    const engMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+    const eng    = new THREE.Mesh(engGeo, engMat);
+    eng.position.set(0, 0, -0.22);
+    birdGroup.add(eng);
+
+    // Two small wing stubs
+    const wingGeo = new THREE.BoxGeometry(0.5, 0.05, 0.18);
+    const wingMat = new THREE.MeshPhongMaterial({ color: 0x001122, emissive: 0x0066aa, emissiveIntensity: 0.4 });
+    [-0.38, 0.38].forEach(xOff => {
+      const wing = new THREE.Mesh(wingGeo, wingMat);
+      wing.position.set(xOff, 0, 0);
+      birdGroup.add(wing);
+    });
 
     // ── Game state ───────────────────────────────────────────────────────────
     const GRAVITY    = 0.004;
@@ -124,36 +230,43 @@
     let animId    = null;
     let lastSpawn = 0;
 
-    const pipes = [];   // each entry: { group, gapTop, gapBot, scored }
+    const pipes = [];
 
-    const scoreEl        = document.getElementById('score');
-    const overlayEl      = document.getElementById('overlay');
-    const overlayTitle   = document.getElementById('overlay-title');
-    const overlayMsg     = document.getElementById('overlay-msg');
+    const scoreEl      = document.getElementById('score');
+    const overlayEl    = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayMsg   = document.getElementById('overlay-msg');
 
-    // ── Pipe factory ─────────────────────────────────────────────────────────
+    // ── Pipe factory (dark steel columns + neon rings) ───────────────────────
     function makePipeSegment(height) {
       const group = new THREE.Group();
 
-      // Main cylinder
-      const cylGeo = new THREE.CylinderGeometry(0.5, 0.5, height, 12);
-      const cylMat = new THREE.MeshLambertMaterial({ color: 0x2ecc40 });
-      const cyl    = new THREE.Mesh(cylGeo, cylMat);
-      group.add(cyl);
+      // Dark metallic column
+      const cylGeo = new THREE.CylinderGeometry(0.5, 0.5, height, 8);
+      const cylMat = new THREE.MeshPhongMaterial({
+        color: 0x1a0033,
+        emissive: 0x110022,
+        shininess: 60,
+      });
+      group.add(new THREE.Mesh(cylGeo, cylMat));
 
-      // Cap
-      const capGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.3, 12);
-      const capMat = new THREE.MeshLambertMaterial({ color: 0x27ae60 });
+      // Neon magenta glowing ring cap
+      const capGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.18, 16);
+      const capMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
       const cap    = new THREE.Mesh(capGeo, capMat);
-      // Place cap at the inner end of this segment (the end closest to the gap)
-      cap.position.y = 0; // will be adjusted by caller
       group.add(cap);
 
-      return { group, cap };
+      // Inner ring accent (cyan)
+      const innerGeo = new THREE.CylinderGeometry(0.52, 0.52, 0.08, 16);
+      const innerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+      const inner    = new THREE.Mesh(innerGeo, innerMat);
+      group.add(inner);
+
+      return { group, cap, inner };
     }
 
     function spawnPipe() {
-      const yOffset = (Math.random() - 0.5) * 0.4;  // -0.2 to +0.2 (nearly centered)
+      const yOffset = (Math.random() - 0.5) * 0.4;
       const gapTop  = yOffset + PIPE_GAP / 2;
       const gapBot  = yOffset - PIPE_GAP / 2;
 
@@ -161,21 +274,18 @@
       pipeGroup.position.set(0, 0, -6);
       scene.add(pipeGroup);
 
-      // ── Top pipe (hangs down from above) ──────────────────────────────────
       const topHeight = 8;
-      const { group: topGroup, cap: topCap } = makePipeSegment(topHeight);
-      // Center of top cylinder sits topHeight/2 above gapTop
+      const { group: topGroup, cap: topCap, inner: topInner } = makePipeSegment(topHeight);
       topGroup.position.y = gapTop + topHeight / 2;
-      // Cap at the bottom of the top pipe (toward the gap)
-      topCap.position.y = -topHeight / 2;
+      topCap.position.y   = -topHeight / 2;
+      topInner.position.y = -topHeight / 2;
       pipeGroup.add(topGroup);
 
-      // ── Bottom pipe (rises from below) ────────────────────────────────────
       const botHeight = 8;
-      const { group: botGroup, cap: botCap } = makePipeSegment(botHeight);
+      const { group: botGroup, cap: botCap, inner: botInner } = makePipeSegment(botHeight);
       botGroup.position.y = gapBot - botHeight / 2;
-      // Cap at the top of the bottom pipe (toward the gap)
-      botCap.position.y = botHeight / 2;
+      botCap.position.y   = botHeight / 2;
+      botInner.position.y = botHeight / 2;
       pipeGroup.add(botGroup);
 
       pipes.push({ group: pipeGroup, gapTop, gapBot, scored: false });
@@ -195,23 +305,11 @@
     document.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (gameOver) {
-          restartGame();
-        } else {
-          handleInput();
-        }
+        gameOver ? restartGame() : handleInput();
       }
     });
+    document.addEventListener('click', () => gameOver ? restartGame() : handleInput());
 
-    document.addEventListener('click', () => {
-      if (gameOver) {
-        restartGame();
-      } else {
-        handleInput();
-      }
-    });
-
-    // ── Resize ────────────────────────────────────────────────────────────────
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -223,40 +321,25 @@
       gameOver = true;
       cancelAnimationFrame(animId);
       animId = null;
-
-      overlayTitle.textContent = 'GAME OVER — Score: ' + score;
-      overlayMsg.textContent   = 'Press Space or Click to Restart';
+      overlayTitle.textContent = 'SYSTEM FAILURE';
+      overlayMsg.textContent   = '[ SCORE: ' + score + ' ]  //  CLICK TO REBOOT';
       overlayEl.classList.remove('hidden');
     }
 
     function restartGame() {
-      // Remove all pipes from scene
-      for (const p of pipes) {
-        scene.remove(p.group);
-      }
+      pipes.forEach(p => scene.remove(p.group));
       pipes.length = 0;
-
-      // Reset bird
       birdGroup.position.set(0, 0, 0);
       birdGroup.rotation.z = 0;
-      velocity  = 0;
-      score     = 0;
-      started   = false;
-      gameOver  = false;
-
+      velocity = 0; score = 0; started = false; gameOver = false;
       scoreEl.textContent = '0';
-
-      // Hide overlay, show start message (reuse overlay for start hint)
-      overlayTitle.textContent = 'Flappy 3D';
-      overlayMsg.textContent   = 'Press Space or Click to Start';
+      overlayTitle.textContent = 'CYBER FLAP';
+      overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
       overlayEl.classList.remove('hidden');
-
-      // Spawn first pipe
       spawnPipe();
       lastSpawn = performance.now();
-
-      // Restart loop
       if (animId !== null) cancelAnimationFrame(animId);
+      prevTime = performance.now();
       animId = requestAnimationFrame(loop);
     }
 
@@ -264,64 +347,54 @@
     let prevTime = performance.now();
     function loop(now) {
       animId = requestAnimationFrame(loop);
-
-      // Delta-time multiplier relative to 60fps so physics are frame-rate independent
       const dt = Math.min((now - prevTime) / (1000 / 60), 3);
       prevTime = now;
 
       if (started && !gameOver) {
-        // Physics (scaled by dt)
         velocity += GRAVITY * dt;
         birdGroup.position.y -= velocity * dt;
-
-        // Tilt
         birdGroup.rotation.z = Math.max(-0.5, Math.min(0.5, -velocity * 2));
 
-        // Spawn pipes
-        if (now - lastSpawn >= SPAWN_MS) {
-          spawnPipe();
-          lastSpawn = now;
-        }
+        // Pulse engine glow with time
+        eng.material.color.setHSL((now * 0.001) % 1, 1, 0.6);
 
-        // Move & check pipes
+        if (now - lastSpawn >= SPAWN_MS) { spawnPipe(); lastSpawn = now; }
+
         for (let i = pipes.length - 1; i >= 0; i--) {
           const p = pipes[i];
           p.group.position.z += PIPE_SPEED * dt;
 
-          // Score
           if (!p.scored && p.group.position.z > 1) {
             p.scored = true;
             score++;
             scoreEl.textContent = score;
           }
 
-          // Remove old pipes
           if (p.group.position.z > 7) {
             scene.remove(p.group);
             pipes.splice(i, 1);
             continue;
           }
 
-          // Collision with pipes
           const pz = p.group.position.z;
           if (pz > -1.5 && pz < 1.5) {
-            const bx = birdGroup.position.x;
             const by = birdGroup.position.y;
-            if (Math.abs(bx) < 0.85) {
+            if (Math.abs(birdGroup.position.x) < 0.85) {
               if (by > p.gapTop + 0.2 || by < p.gapBot - 0.2) {
-                triggerGameOver();
-                return;
+                triggerGameOver(); return;
               }
             }
           }
         }
 
-        // Boundary collision
         if (birdGroup.position.y > 6 || birdGroup.position.y < -6) {
-          triggerGameOver();
-          return;
+          triggerGameOver(); return;
         }
       }
+
+      // Animate neon lights
+      cyanLight.intensity    = 1.5 + Math.sin(now * 0.003) * 0.3;
+      magentaLight.intensity = 1.2 + Math.cos(now * 0.004) * 0.3;
 
       renderer.render(scene, camera);
     }
@@ -330,8 +403,6 @@
     spawnPipe();
     lastSpawn = performance.now();
     animId = requestAnimationFrame(loop);
-    // Overlay starts visible with "Press Space or Click to Start"
-    overlayEl.classList.remove('hidden');
   </script>
 </body>
 </html>
