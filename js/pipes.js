@@ -39,6 +39,7 @@ export function spawnPipe(scene, spawnZ = -18) {
 
   const pipeGroup = new THREE.Group();
   pipeGroup.position.set(0, 0, spawnZ);
+  pipeGroup.frustumCulled = false;
   scene.add(pipeGroup);
 
   const topHeight = 12;
