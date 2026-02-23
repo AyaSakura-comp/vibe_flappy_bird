@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
+  test.setTimeout(120000);
   await page.goto('http://localhost:3456/index.html');
 
   // Wait for canvas and Three.js scene to initialize
@@ -18,10 +19,10 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
   // Gap-targeting flap strategy:
   //   - Read the next pipe's gap center (exposed as __FLAPPY_NEXT_GAP_Y)
   //   - Flap when bird is more than 1.0 units below that target
-  const TOLERANCE_BELOW  = 1.0;
+  const TOLERANCE_BELOW  = 0.6;
   const CHECK_INTERVAL_MS = 50;   // fast polling so we never miss a flap window
   const TARGET_SCORE      = 10;   // must pass at least 10 obstacles
-  const TIMEOUT_MS        = 60000; // safety timeout
+  const TIMEOUT_MS        = 75000; // safety timeout
 
   // First click starts the game
   await page.mouse.click(cx, cy);

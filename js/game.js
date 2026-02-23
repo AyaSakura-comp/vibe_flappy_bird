@@ -36,6 +36,11 @@ let gameOver  = false;
 let animId    = null;
 let lastSpawn = 0;
 
+// Screen shake state
+let shakeAmp = 0;     // current shake amplitude (decays to 0)
+const SHAKE_DECAY = 0.92; // multiplier per frame at 60fps (~2s duration)
+const SHAKE_INIT  = 1.2;  // initial amplitude on game over (in world units)
+
 const scoreEl      = document.getElementById('score');
 const overlayEl    = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
@@ -73,6 +78,7 @@ window.addEventListener('resize', () => {
 // ── Game over / restart ──────────────────────────────────────────────────
 function triggerGameOver() {
   gameOver = true;
+  shakeAmp = SHAKE_INIT;
   spawnExplosion(
     scene,
     birdGroup.position.x,
@@ -95,7 +101,7 @@ function restartGame() {
   birdGroup.position.set(0, 0, 0);
   birdGroup.rotation.z = 0;
   resetTrail(trail);
-  velocity = 0; score = 0; started = false; gameOver = false;
+  velocity = 0; score = 0; started = false; gameOver = false; shakeAmp = 0;
   scoreEl.textContent = '0';
   overlayTitle.textContent = 'CYBER FLAP';
   overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
@@ -163,6 +169,18 @@ function loop(now) {
   window.__FLAPPY_NEXT_GAP_Y = _np ? (_np.gapTop + _np.gapBot) / 2 : 0;
   window.__FLAPPY_NEXT_GAP_TOP = _np ? _np.gapTop : 0;
   window.__FLAPPY_NEXT_GAP_BOT = _np ? _np.gapBot : 0;
+  window.__FLAPPY_SHAKE_AMP    = shakeAmp;
+
+  // Screen shake — sine wave at ~8Hz so it's visible in compressed video
+  if (shakeAmp > 0.001) {
+    const sx = Math.sin(now * 0.05) * shakeAmp;
+    const sy = Math.cos(now * 0.07) * shakeAmp;
+    camera.position.set(sx, sy, 20);
+    shakeAmp *= Math.pow(SHAKE_DECAY, dt);
+  } else {
+    shakeAmp = 0;
+    camera.position.set(0, 0, 20);
+  }
 
   renderer.render(scene, camera);
 }

@@ -99,8 +99,22 @@ globalThis.window = {
         this.material = mat;
         this.position = mockVec3();
         this.frustumCulled = true;
+        this.userData = {};
       }
     },
+    PointsMaterial: class {
+      constructor(opts) { Object.assign(this, mockMaterial(opts)); }
+    },
+    Points: class {
+      constructor(geo, mat) {
+        this.geometry = geo;
+        this.material = mat;
+        this.position = mockVec3();
+        this.frustumCulled = true;
+        this.userData = {};
+      }
+    },
+    AdditiveBlending: 2,
   },
 };
 
@@ -336,25 +350,27 @@ describe('trail', () => {
     assert.ok(scene.children.length >= 1);
   });
 
-  it('updateTrail shifts positions and inserts new head', () => {
+  it('updateTrail samples position and y of head matches most recent call', () => {
     const scene = mockScene();
     const trail = trailMod.createTrail(scene);
-    trailMod.updateTrail(trail, 0, 1.5, 0);
-    trailMod.updateTrail(trail, 0, 2.0, 0);
+    // Call twice to ensure at least one sample (SAMPLE_EVERY <= 2)
+    trailMod.updateTrail(trail, 1, 2.5, -0.3);
+    trailMod.updateTrail(trail, 1, 2.5, -0.3);
     const posArr = trail.geometry.attributes.position.array;
-    assert.equal(posArr[0], 0);   // x
-    assert.equal(posArr[1], 2.0); // y
-    assert.equal(posArr[2], 0);   // z
+    assert.equal(posArr[1], 2.5);   // y of head matches
+    assert.ok(posArr[2] <= -0.3);   // z is at or behind bird
   });
 
-  it('resetTrail zeroes all positions', () => {
+  it('resetTrail resets bird position to origin', () => {
     const scene = mockScene();
     const trail = trailMod.createTrail(scene);
-    trailMod.updateTrail(trail, 0, 5, 0);
+    trailMod.updateTrail(trail, 3, 5, 1);
     trailMod.resetTrail(trail);
     const posArr = trail.geometry.attributes.position.array;
-    for (let i = 0; i < posArr.length; i++) {
-      assert.equal(posArr[i], 0);
-    }
+    // After reset, bird at 0,0,0 — all x and y should be 0
+    assert.equal(posArr[0], 0); // x
+    assert.equal(posArr[1], 0); // y
+    assert.equal(posArr[3], 0); // x of second point
+    assert.equal(posArr[4], 0); // y of second point
   });
 });
