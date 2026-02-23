@@ -7,7 +7,7 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
   await page.waitForSelector('canvas', { timeout: 10000 });
   await page.waitForTimeout(1500);
 
-  const cx = 640, cy = 360;
+  const cx = 360, cy = 640; // portrait 720x1280 viewport center
 
   // Read game state exposed by the animation loop
   const getBirdY    = () => page.evaluate(() => window.__FLAPPY_BIRD_Y  ?? 0);
@@ -52,8 +52,11 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
     await page.waitForTimeout(CHECK_INTERVAL_MS);
   }
 
+  // Stop flapping — let bird die naturally to show explosion + game-over overlay
+  await page.waitForFunction(() => window.__FLAPPY_OVER === true, { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(1500); // let explosion animation play
+
   // Final assertions
-  await page.waitForTimeout(500);
   await expect(page.locator('#score')).toBeVisible();
   await expect(page.locator('canvas')).toBeVisible();
 

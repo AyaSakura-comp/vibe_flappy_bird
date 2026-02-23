@@ -6,7 +6,7 @@ module.exports = defineConfig({
   use: {
     video: 'on',
     headless: true,
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 720, height: 1280 },
   },
   webServer: {
     command: 'npx http-server . -p 3456 --cors',

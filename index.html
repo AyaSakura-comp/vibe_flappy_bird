@@ -273,9 +273,9 @@
     const FLAP       = -0.13;   // slightly softer flap for easier control
     const PIPE_GAP      = 6.5;  // wider gap for human players
     const PIPE_SPEED    = 0.04; // slower pipes — more reaction time
-    const PIPE_SPACING  = 8;   // world units between pipes — 8 gives 1.83s window for high-to-low gap transitions
-    // At 60fps, PIPE_SPEED*60 = 3 units/s → spacing/speed = interval in ms
-    const SPAWN_MS      = Math.round(PIPE_SPACING / (PIPE_SPEED * 60) * 1000); // ≈1667ms
+    const PIPE_SPACING  = 6;   // world units between pipes — 27-unit corridor / 6 = 4+ pipes visible simultaneously
+    // At 60fps, PIPE_SPEED*60 = 2.4 units/s → spacing/speed = 2.5s window for gap transitions
+    const SPAWN_MS      = Math.round(PIPE_SPACING / (PIPE_SPEED * 60) * 1000); // ≈2500ms
 
     let velocity  = 0;
     let score     = 0;
@@ -286,9 +286,9 @@
 
     const pipes = [];
     // Cycle pattern — test targets __FLAPPY_NEXT_GAP_Y so bird flies to each gap's actual height.
-    // Gradual variation: starts center, ramps to top/bottom, then repeats.
-    // Human-friendly: first 2 pipes near center, then moderate swings.
-    const PIPE_Y_PATTERN = [0, 1.0, 2.5, -1.0, -2.5, 1.5, -1.5, 0]; // gentle ramp up/down
+    // Dramatic variation: clearly different top/center/bottom gaps.
+    // PIPE_GAP=6.5 makes all offsets safe for humans and the adaptive test.
+    const PIPE_Y_PATTERN = [0, 2.0, -2.0, 1.0, -1.0]; // center, high, low, center-high, center-low
     let pipeCount = 0;
 
     const scoreEl      = document.getElementById('score');
@@ -322,7 +322,7 @@
 
     function spawnPipe(spawnZ = -18) {
       // Cycle top/bottom/center-high/center-low with small jitter for guaranteed variety
-      const yOffset = PIPE_Y_PATTERN[pipeCount % PIPE_Y_PATTERN.length];
+      const yOffset = PIPE_Y_PATTERN[pipeCount % 5];
       pipeCount++;
       const gapTop  = yOffset + PIPE_GAP / 2;
       const gapBot  = yOffset - PIPE_GAP / 2;
