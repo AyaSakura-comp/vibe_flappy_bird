@@ -400,13 +400,37 @@ Expected: 34 tests, 0 failures.
 Run: `node node_modules/@playwright/test/cli.js test`
 Expected: 3 tests pass.
 
-**Step 3: Manual play test**
+**Step 3: Video verification via Gemini (verify-video skill)**
 
-Run: `node node_modules/http-server/bin/http-server . -p 3456 --cors`
-Verify:
-- Pipes move noticeably faster
-- Bird rotation smoothly lerps with velocity
-- Cyan trail follows bird, fades toward tail
-- Camera shakes briefly on death
-- Trail resets on restart
-- Game is challenging but playable
+After e2e tests pass, use the verify-video skill to analyze the Playwright recordings.
+
+**3a: Verify flappy.spec.js recording**
+
+Find the video at `test-results/*/video.webm` for the flappy test. Send to Gemini with this expected behavior:
+
+> A cyberpunk-themed flappy bird game. The bird (glowing cyan rectangle) navigates through purple pipe obstacles. KEY THINGS TO VERIFY: (1) Pipes move at a fast, intense pace — noticeably quick. (2) The bird tilts nose-up when flapping and nose-down when falling with smooth transitions, not snapping. (3) A fading cyan neon line trail follows behind the bird during flight. (4) When the bird crashes, the camera shakes briefly (quick jolt, ~0.15s) before the "SYSTEM FAILURE" overlay appears. (5) The bird successfully navigates multiple pipes (score visible). (6) On restart, the trail resets (no lingering trail from previous run).
+
+Verdict must be PASS on all 6 criteria.
+
+**3b: Verify golden.spec.js recording**
+
+Find the golden test video. Send to Gemini with this expected behavior:
+
+> A cyberpunk flappy bird game where the bird navigates 4+ pipes, then crashes. KEY THINGS TO VERIFY: (1) Fast pipe speed — pipes approach quickly. (2) Smooth bird rotation linked to velocity (tilts up on flap, down on fall). (3) Cyan fading trail behind the bird. (4) On crash: explosion particles + brief camera shake + "SYSTEM FAILURE" overlay appears. (5) Score shows 4 or higher before crash.
+
+Verdict must be PASS.
+
+**3c: If any verification FAILS**
+
+- Read Gemini's detailed failure reasoning
+- Identify which feature failed (rotation, trail, shake, speed)
+- Fix the issue in the relevant file
+- Re-run e2e tests to regenerate video
+- Re-verify with Gemini
+- Commit the fix
+
+**Step 4: Final commit and push**
+
+```bash
+git push
+```
