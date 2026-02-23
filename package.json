@@ -2,7 +2,8 @@
   "name": "flappy3d",
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:unit": "node tests/unit.test.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.41.0",
