@@ -12,24 +12,25 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
   // Read game state exposed by the animation loop
   const getBirdY    = () => page.evaluate(() => window.__FLAPPY_BIRD_Y  ?? 0);
   const getTargetY  = () => page.evaluate(() => window.__FLAPPY_NEXT_GAP_Y ?? 0);
+  const getScore    = () => page.evaluate(() => window.__FLAPPY_SCORE   ?? 0);
   const isOver      = () => page.evaluate(() => window.__FLAPPY_OVER    ?? false);
 
   // Gap-targeting flap strategy:
   //   - Read the next pipe's gap center (exposed as __FLAPPY_NEXT_GAP_Y)
-  //   - Flap when bird is more than 0.8 units below that target
-  //   - Let gravity pull bird down when it is above target
-  // This causes the bird to visibly fly HIGH for top gaps and LOW for bottom gaps,
-  // making gap-height variation clearly observable in the recording.
-  const TOLERANCE_BELOW = 1.0;  // flap when birdY < targetY - TOLERANCE_BELOW
-  const CHECK_INTERVAL_MS = 50;  // fast polling so we never miss a flap window
-  const DURATION_MS = 16000;
+  //   - Flap when bird is more than 1.0 units below that target
+  const TOLERANCE_BELOW  = 1.0;
+  const CHECK_INTERVAL_MS = 50;   // fast polling so we never miss a flap window
+  const TARGET_SCORE      = 10;   // must pass at least 10 obstacles
+  const TIMEOUT_MS        = 60000; // safety timeout
 
   // First click starts the game
   await page.mouse.click(cx, cy);
   await page.waitForTimeout(500);
 
   const startTime = Date.now();
-  while (Date.now() - startTime < DURATION_MS) {
+  let cumulativeScore = 0;
+
+  while (cumulativeScore < TARGET_SCORE && Date.now() - startTime < TIMEOUT_MS) {
     const over = await isOver();
     if (over) {
       // Game over — wait for explosion + overlay (900ms delay), then restart
@@ -41,7 +42,9 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
       continue;
     }
 
-    const [birdY, targetY] = await Promise.all([getBirdY(), getTargetY()]);
+    const [birdY, targetY, score] = await Promise.all([getBirdY(), getTargetY(), getScore()]);
+    cumulativeScore = Math.max(cumulativeScore, score);
+
     if (birdY < targetY - TOLERANCE_BELOW) {
       await page.mouse.click(cx, cy); // flap toward gap center
     }
@@ -57,5 +60,8 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
   const finalScore  = await page.locator('#score').textContent();
   const overlayClass = await page.locator('#overlay').getAttribute('class');
   console.log('Score at end:', finalScore);
+  console.log('Cumulative best score:', cumulativeScore);
   console.log('Overlay class at end:', overlayClass);
+
+  expect(cumulativeScore).toBeGreaterThanOrEqual(TARGET_SCORE);
 });

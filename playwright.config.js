@@ -2,6 +2,7 @@ const { defineConfig } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
+  timeout: 90000, // 90s per test — enough for 10+ pipes + restart overhead
   use: {
     video: 'on',
     headless: true,
