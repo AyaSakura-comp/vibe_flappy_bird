@@ -76,6 +76,31 @@ globalThis.window = {
       constructor() { this.position = mockVec3(); }
     },
     Color: class { constructor() {} },
+    BufferGeometry: class {
+      constructor() {
+        this.attributes = {};
+      }
+      setAttribute(name, attr) { this.attributes[name] = attr; }
+      setDrawRange(start, count) { this.drawRange = { start, count }; }
+    },
+    BufferAttribute: class {
+      constructor(array, itemSize) {
+        this.array = array;
+        this.itemSize = itemSize;
+        this.needsUpdate = false;
+      }
+    },
+    LineBasicMaterial: class {
+      constructor(opts) { Object.assign(this, mockMaterial(opts)); }
+    },
+    Line: class {
+      constructor(geo, mat) {
+        this.geometry = geo;
+        this.material = mat;
+        this.position = mockVec3();
+        this.frustumCulled = true;
+      }
+    },
   },
 };
 
@@ -89,6 +114,7 @@ const { createBird } = await import('../js/bird.js');
 const { createEnvironment } = await import('../js/environment.js');
 const { spawnExplosion, updateExplosion, clearParticles } = await import('../js/explosion.js');
 const pipesMod = await import('../js/pipes.js');
+const trailMod = await import('../js/trail.js');
 
 // ── collision.js ────────────────────────────────────────────────────────
 function makePipe(z, gapTop, gapBot) {
@@ -298,5 +324,37 @@ describe('pipes', () => {
     pipesMod.resetPipes(scene);
     pipesMod.spawnPipe(scene);
     assert.equal(pipesMod.pipes[0].scored, false);
+  });
+});
+
+// ── trail.js ──────────────────────────────────────────────────────────
+describe('trail', () => {
+  it('createTrail returns a line object and adds to scene', () => {
+    const scene = mockScene();
+    const trail = trailMod.createTrail(scene);
+    assert.ok(trail);
+    assert.ok(scene.children.length >= 1);
+  });
+
+  it('updateTrail shifts positions and inserts new head', () => {
+    const scene = mockScene();
+    const trail = trailMod.createTrail(scene);
+    trailMod.updateTrail(trail, 0, 1.5, 0);
+    trailMod.updateTrail(trail, 0, 2.0, 0);
+    const posArr = trail.geometry.attributes.position.array;
+    assert.equal(posArr[0], 0);   // x
+    assert.equal(posArr[1], 2.0); // y
+    assert.equal(posArr[2], 0);   // z
+  });
+
+  it('resetTrail zeroes all positions', () => {
+    const scene = mockScene();
+    const trail = trailMod.createTrail(scene);
+    trailMod.updateTrail(trail, 0, 5, 0);
+    trailMod.resetTrail(trail);
+    const posArr = trail.geometry.attributes.position.array;
+    for (let i = 0; i < posArr.length; i++) {
+      assert.equal(posArr[i], 0);
+    }
   });
 });
