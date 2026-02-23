@@ -105,8 +105,8 @@
     scene.background = new THREE.Color(0x050010);
     // No fog — all pipes must be visible at depth for verification
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-    camera.position.set(0, 0, 8);
+    const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 400);
+    camera.position.set(0, 0, 20);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -305,14 +305,14 @@
       const cylMat = new THREE.MeshBasicMaterial({ color: 0x6600cc }); // unlit — stays visible at any depth
       group.add(new THREE.Mesh(cylGeo, cylMat));
 
-      // Neon magenta glowing ring cap — very large so gap position is unmistakable at depth
-      const capGeo = new THREE.CylinderGeometry(2.0, 2.0, 0.4, 16);
+      // Thin neon band at the gap edge — same radius as cylinder, no overhang
+      const capGeo = new THREE.CylinderGeometry(1.01, 1.01, 0.08, 16);
       const capMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
       const cap    = new THREE.Mesh(capGeo, capMat);
       group.add(cap);
 
-      // Inner ring accent (cyan)
-      const innerGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.16, 16);
+      // Thinner inner accent band
+      const innerGeo = new THREE.CylinderGeometry(1.005, 1.005, 0.04, 16);
       const innerMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
       const inner    = new THREE.Mesh(innerGeo, innerMat);
       group.add(inner);
@@ -454,10 +454,10 @@
           }
 
           const pz = p.group.position.z;
-          if (pz > -1.5 && pz < 1.5) {
+          if (pz > -2.0 && pz < 1.5) {
             const by = birdGroup.position.y;
             if (Math.abs(birdGroup.position.x) < 1.1) {
-              if (by > p.gapTop + 0.2 || by < p.gapBot - 0.2) {
+              if (by + 0.15 > p.gapTop || by - 0.15 < p.gapBot) {
                 triggerGameOver(); return;
               }
             }
@@ -484,6 +484,8 @@
       // Expose next pipe's gap center so test can fly toward the correct height
       const _np = pipes.filter(p => !p.scored).sort((a, b) => b.group.position.z - a.group.position.z)[0];
       window.__FLAPPY_NEXT_GAP_Y = _np ? (_np.gapTop + _np.gapBot) / 2 : 0;
+      window.__FLAPPY_NEXT_GAP_TOP = _np ? _np.gapTop : 0;
+      window.__FLAPPY_NEXT_GAP_BOT = _np ? _np.gapBot : 0;
 
       renderer.render(scene, camera);
     }
