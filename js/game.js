@@ -4,6 +4,7 @@ import { createEnvironment } from './environment.js';
 import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.js';
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
 import { checkCollision } from './collision.js';
+import { createTrail, updateTrail, resetTrail } from './trail.js';
 
 const THREE = window.THREE;
 
@@ -25,6 +26,7 @@ const { cyanLight, magentaLight } = createEnvironment(scene);
 
 // ── Bird ─────────────────────────────────────────────────────────────────
 const { birdGroup, eng } = createBird(scene);
+const trail = createTrail(scene);
 
 // ── Game state ───────────────────────────────────────────────────────────
 let velocity  = 0;
@@ -92,6 +94,7 @@ function restartGame() {
   birdGroup.visible = true;
   birdGroup.position.set(0, 0, 0);
   birdGroup.rotation.z = 0;
+  resetTrail(trail);
   velocity = 0; score = 0; started = false; gameOver = false;
   scoreEl.textContent = '0';
   overlayTitle.textContent = 'CYBER FLAP';
@@ -112,6 +115,7 @@ function loop(now) {
   if (started && !gameOver) {
     velocity += GRAVITY * dt;
     birdGroup.position.y -= velocity * dt;
+    updateTrail(trail, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z - 0.3);
     const targetRot = Math.max(-0.6, Math.min(0.6, velocity * 4));
     birdGroup.rotation.z += (targetRot - birdGroup.rotation.z) * 0.15 * dt;
 
