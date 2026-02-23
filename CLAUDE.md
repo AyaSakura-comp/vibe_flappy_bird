@@ -36,7 +36,7 @@ package.json
 
 ```bash
 # Serve locally
-node node_modules/http-server/bin/http-server . -p 3456 --cors
+node node_modules/http-server/bin/http-server . -p 1124 --cors -c-1
 
 # Run tests (no bin links — invoke directly)
 node node_modules/@playwright/test/cli.js test

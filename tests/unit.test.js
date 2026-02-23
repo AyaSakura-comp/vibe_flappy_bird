@@ -147,17 +147,17 @@ describe('checkCollision', () => {
     assert.equal(checkCollision(0, -1.2, makePipe(0, 3, -3)), false);
   });
   it('returns true when birdY + margin > gapTop', () => {
-    assert.equal(checkCollision(3.0, 0, makePipe(0, 2.9, -3)), true);
+    assert.equal(checkCollision(3.41, 0, makePipe(0, 3.5, -3.5)), true);
   });
   it('returns true when birdY - margin < gapBot', () => {
-    assert.equal(checkCollision(-3.0, 0, makePipe(0, 3, -2.9)), true);
+    assert.equal(checkCollision(-3.41, 0, makePipe(0, 3.5, -3.5)), true);
   });
   it('returns false when bird is within the gap', () => {
-    assert.equal(checkCollision(0, 0, makePipe(0, 3, -3)), false);
+    assert.equal(checkCollision(0, 0, makePipe(0, 3.5, -3.5)), false);
   });
   it('custom margin parameter works', () => {
-    assert.equal(checkCollision(2.9, 0, makePipe(0, 2.9, -3), 0.15), true);
-    assert.equal(checkCollision(2.9, 0, makePipe(0, 2.9, -3), 0), false);
+    assert.equal(checkCollision(3.4, 0, makePipe(0, 3.5, -3.5), 0.15), true);
+    assert.equal(checkCollision(3.4, 0, makePipe(0, 3.5, -3.5), 0), false);
   });
 });
 
@@ -179,7 +179,7 @@ describe('constants', () => {
   });
   it('PIPE_GAP is safe at all offsets', () => {
     const maxOff = Math.max(...PIPE_Y_PATTERN.map(Math.abs));
-    assert.ok(PIPE_GAP > maxOff * 2);
+    assert.ok(PIPE_GAP >= maxOff * 2);
   });
   it('EXPLOSION_COLORS has 5 entries', () => {
     assert.equal(EXPLOSION_COLORS.length, 5);

@@ -13,7 +13,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050010);
 
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 400);
-camera.position.set(0, 0, 20);
+camera.position.set(15, 5, 15);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -162,6 +162,7 @@ function loop(now) {
 
   // Expose state for Playwright adaptive test
   window.__FLAPPY_BIRD_Y  = birdGroup.position.y;
+  window.__FLAPPY_VELOCITY = velocity;
   window.__FLAPPY_SCORE   = score;
   window.__FLAPPY_STARTED = started;
   window.__FLAPPY_OVER    = gameOver;
@@ -173,13 +174,13 @@ function loop(now) {
 
   // Screen shake — sine wave at ~8Hz so it's visible in compressed video
   if (shakeAmp > 0.001) {
-    const sx = Math.sin(now * 0.05) * shakeAmp;
-    const sy = Math.cos(now * 0.07) * shakeAmp;
-    camera.position.set(sx, sy, 20);
+    const sx = 15 + Math.sin(now * 0.05) * shakeAmp;
+    const sy = 5 + Math.cos(now * 0.07) * shakeAmp;
+    camera.position.set(sx, sy, 15);
     shakeAmp *= Math.pow(SHAKE_DECAY, dt);
   } else {
     shakeAmp = 0;
-    camera.position.set(0, 0, 20);
+    camera.position.set(15, 5, 15);
   }
 
   renderer.render(scene, camera);
