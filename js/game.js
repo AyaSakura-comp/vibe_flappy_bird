@@ -112,7 +112,7 @@ function loop(now) {
   if (started && !gameOver) {
     velocity += GRAVITY * dt;
     birdGroup.position.y -= velocity * dt;
-    const targetRot = Math.max(-0.52, Math.min(0.52, -velocity * 3));
+    const targetRot = Math.max(-0.6, Math.min(0.6, velocity * 4));
     birdGroup.rotation.z += (targetRot - birdGroup.rotation.z) * 0.15 * dt;
 
     eng.material.color.setHSL((now * 0.001) % 1, 1, 0.6);
