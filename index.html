@@ -273,7 +273,7 @@
     const FLAP       = -0.15;
     const PIPE_GAP      = 5.0;
     const PIPE_SPEED    = 0.05;
-    const PIPE_SPACING  = 5;   // world units between pipes (closer = more visible depth)
+    const PIPE_SPACING  = 8;   // world units between pipes — 8 gives 1.83s window for high-to-low gap transitions
     // At 60fps, PIPE_SPEED*60 = 3 units/s → spacing/speed = interval in ms
     const SPAWN_MS      = Math.round(PIPE_SPACING / (PIPE_SPEED * 60) * 1000); // ≈1667ms
 
@@ -285,13 +285,10 @@
     let lastSpawn = 0;
 
     const pipes = [];
-    // Cycle pattern guarantees visually distinct gap heights.
-    // Start near center so bird (y=0) can reach first gap, then alternate top/bottom/etc.
-    // ±2 offsets: visually distinct top/bottom/center but within the bird's reachable range
-    // at 1300ms click intervals (bird drifts ~-0.5 units per cycle with GRAVITY=0.004)
-    // All offsets near zero so gapBot < -2 and bird peaking at ~2.7 stays below gapTop ~3.
-    // Bird held above 0 by test; gapBot death threshold ~-2.2 gives wide safety margin.
-    const PIPE_Y_PATTERN = [0.5, 0, 0.5, 0, 0.5];
+    // Cycle pattern — test targets __FLAPPY_NEXT_GAP_Y so bird flies to each gap's actual height.
+    // ±3.0 range gives clearly distinct visual variety (top/bottom/center).
+    // PIPE_SPACING=8 gives 1.83s window — enough for bird to fall from y=5 to y=-3 between pipes.
+    const PIPE_Y_PATTERN = [0, 3.0, -3.0, 1.5, -1.5]; // center, high, low, center-high, center-low
     let pipeCount = 0;
 
     const scoreEl      = document.getElementById('score');
@@ -305,11 +302,7 @@
 
       // Dark metallic column — wider so it's visible at depth
       const cylGeo = new THREE.CylinderGeometry(1.0, 1.0, height, 12);
-      const cylMat = new THREE.MeshPhongMaterial({
-        color: 0x3a0066,
-        emissive: 0x440055,
-        shininess: 80,
-      });
+      const cylMat = new THREE.MeshBasicMaterial({ color: 0x6600cc }); // unlit — stays visible at any depth
       group.add(new THREE.Mesh(cylGeo, cylMat));
 
       // Neon magenta glowing ring cap — very large so gap position is unmistakable at depth
@@ -329,7 +322,7 @@
 
     function spawnPipe(spawnZ = -18) {
       // Cycle top/bottom/center-high/center-low with small jitter for guaranteed variety
-      const yOffset = PIPE_Y_PATTERN[pipeCount % 5] + (Math.random() - 0.5) * 0.4;
+      const yOffset = PIPE_Y_PATTERN[pipeCount % 5];
       pipeCount++;
       const gapTop  = yOffset + PIPE_GAP / 2;
       const gapBot  = yOffset - PIPE_GAP / 2;
@@ -454,7 +447,7 @@
             scoreEl.textContent = score;
           }
 
-          if (p.group.position.z > 7) {
+          if (p.group.position.z > 2) {
             scene.remove(p.group);
             pipes.splice(i, 1);
             continue;
@@ -488,6 +481,9 @@
       window.__FLAPPY_SCORE   = score;
       window.__FLAPPY_STARTED = started;
       window.__FLAPPY_OVER    = gameOver;
+      // Expose next pipe's gap center so test can fly toward the correct height
+      const _np = pipes.filter(p => !p.scored).sort((a, b) => b.group.position.z - a.group.position.z)[0];
+      window.__FLAPPY_NEXT_GAP_Y = _np ? (_np.gapTop + _np.gapBot) / 2 : 0;
 
       renderer.render(scene, camera);
     }
@@ -496,7 +492,7 @@
     // Pre-fill the view with pipes at evenly-spaced depths so the player sees
     // a full corridor of obstacles from the start.
     function prefillPipes() {
-      const farZ  = -18;  // 4 pipes at z=-3,-8,-13,-18 (spacing 5) fill the visible corridor
+      const farZ  = -27;  // 4 pipes at z=-3,-11,-19,-27 (spacing 8) fill the visible corridor
       const nearZ =  -3;
       for (let z = nearZ; z >= farZ; z -= PIPE_SPACING) {
         spawnPipe(z);
