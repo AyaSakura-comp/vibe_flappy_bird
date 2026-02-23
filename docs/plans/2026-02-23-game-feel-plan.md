@@ -388,49 +388,325 @@ git commit -m "test: tune AI bot tolerance for faster pipe speed"
 
 ---
 
-### Task 7: Final verification
+### Task 7: Write dedicated verification Playwright tests
 
-**Step 1: Run all unit tests**
+**Files:**
+- Create: `tests/verify-trail.spec.js`
+- Create: `tests/verify-rotation.spec.js`
+- Create: `tests/verify-shake.spec.js`
+- Create: `tests/verify-speed.spec.js`
+- Create: `tests/verify-restart.spec.js`
 
-Run: `node tests/unit.test.js`
-Expected: 34 tests, 0 failures.
+Each test is designed to produce a video recording optimized for one specific visual feature. These are NOT functional assertions — they produce videos for Gemini verify-video analysis.
 
-**Step 2: Run all e2e tests**
+**Step 1: Write `tests/verify-trail.spec.js`**
+
+Purpose: Navigate 4+ pipes smoothly so the trail is clearly visible throughout.
+
+```js
+const { test, expect } = require('@playwright/test');
+
+test('Verify: neon trail behind bird', async ({ page }) => {
+  await page.goto('http://localhost:3456/index.html');
+  await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.waitForTimeout(1500);
+
+  const cx = 360, cy = 640;
+  const getBirdY   = () => page.evaluate(() => window.__FLAPPY_BIRD_Y ?? 0);
+  const getTargetY = () => page.evaluate(() => window.__FLAPPY_NEXT_GAP_Y ?? 0);
+  const getScore   = () => page.evaluate(() => window.__FLAPPY_SCORE ?? 0);
+  const isOver     = () => page.evaluate(() => window.__FLAPPY_OVER ?? false);
+
+  // Start game
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(300);
+
+  // Navigate through 4+ pipes with steady, visible flight
+  const start = Date.now();
+  while (Date.now() - start < 30000) {
+    const [score, over] = await Promise.all([getScore(), isOver()]);
+    if (score >= 4) break;
+    if (over) {
+      await page.waitForTimeout(1200);
+      await page.mouse.click(cx, cy);
+      await page.waitForTimeout(500);
+      await page.mouse.click(cx, cy);
+      await page.waitForTimeout(300);
+      continue;
+    }
+    const [birdY, targetY] = await Promise.all([getBirdY(), getTargetY()]);
+    if (birdY < targetY - 0.6) {
+      await page.mouse.click(cx, cy);
+    }
+    await page.waitForTimeout(50);
+  }
+
+  // Let bird fly a bit more so trail is clearly visible
+  await page.waitForTimeout(2000);
+  const finalScore = await getScore();
+  expect(finalScore).toBeGreaterThanOrEqual(4);
+});
+```
+
+**Step 2: Write `tests/verify-rotation.spec.js`**
+
+Purpose: Alternate between rapid flapping and falling to show rotation transitions clearly.
+
+```js
+const { test, expect } = require('@playwright/test');
+
+test('Verify: bird rotation linked to velocity', async ({ page }) => {
+  await page.goto('http://localhost:3456/index.html');
+  await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.waitForTimeout(1500);
+
+  const cx = 360, cy = 640;
+  const isOver = () => page.evaluate(() => window.__FLAPPY_OVER ?? false);
+
+  // Start game
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(300);
+
+  // Pattern: flap 3x rapidly (bird tilts up), pause 1.5s (bird nose-dives), repeat
+  for (let cycle = 0; cycle < 4; cycle++) {
+    const over = await isOver();
+    if (over) break;
+
+    // Rapid flaps — bird should tilt nose-up
+    for (let i = 0; i < 3; i++) {
+      await page.mouse.click(cx, cy);
+      await page.waitForTimeout(120);
+    }
+
+    // Pause — bird should nose-dive as it falls
+    await page.waitForTimeout(1500);
+  }
+
+  // Let it play out
+  await page.waitForTimeout(1000);
+});
+```
+
+**Step 3: Write `tests/verify-shake.spec.js`**
+
+Purpose: Deliberately crash into a pipe and capture the camera shake moment.
+
+```js
+const { test, expect } = require('@playwright/test');
+
+test('Verify: screen shake on death', async ({ page }) => {
+  await page.goto('http://localhost:3456/index.html');
+  await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.waitForTimeout(1500);
+
+  const cx = 360, cy = 640;
+  const isOver = () => page.evaluate(() => window.__FLAPPY_OVER ?? false);
+
+  // Start game
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(300);
+
+  // Fly upward aggressively to crash into top pipe
+  for (let i = 0; i < 20; i++) {
+    const over = await isOver();
+    if (over) break;
+    await page.mouse.click(cx, cy);
+    await page.waitForTimeout(80);
+  }
+
+  // Wait for crash — shake should be visible here
+  await page.waitForFunction(() => window.__FLAPPY_OVER === true, { timeout: 10000 });
+
+  // Hold for 2s to capture shake + explosion + SYSTEM FAILURE overlay
+  await page.waitForTimeout(2000);
+
+  const over = await isOver();
+  expect(over).toBe(true);
+});
+```
+
+**Step 4: Write `tests/verify-speed.spec.js`**
+
+Purpose: Navigate 4+ pipes at full speed to demonstrate the intense pace.
+
+```js
+const { test, expect } = require('@playwright/test');
+
+test('Verify: fast pipe speed', async ({ page }) => {
+  await page.goto('http://localhost:3456/index.html');
+  await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.waitForTimeout(1500);
+
+  const cx = 360, cy = 640;
+  const getBirdY   = () => page.evaluate(() => window.__FLAPPY_BIRD_Y ?? 0);
+  const getTargetY = () => page.evaluate(() => window.__FLAPPY_NEXT_GAP_Y ?? 0);
+  const getScore   = () => page.evaluate(() => window.__FLAPPY_SCORE ?? 0);
+  const isOver     = () => page.evaluate(() => window.__FLAPPY_OVER ?? false);
+
+  // Start game
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(300);
+
+  // Navigate through pipes — bot reacts aggressively for fast speed
+  const start = Date.now();
+  while (Date.now() - start < 30000) {
+    const [score, over] = await Promise.all([getScore(), isOver()]);
+    if (score >= 4) break;
+    if (over) {
+      await page.waitForTimeout(1200);
+      await page.mouse.click(cx, cy);
+      await page.waitForTimeout(500);
+      await page.mouse.click(cx, cy);
+      await page.waitForTimeout(300);
+      continue;
+    }
+    const [birdY, targetY] = await Promise.all([getBirdY(), getTargetY()]);
+    if (birdY < targetY - 0.6) {
+      await page.mouse.click(cx, cy);
+    }
+    await page.waitForTimeout(50);
+  }
+
+  const finalScore = await getScore();
+  expect(finalScore).toBeGreaterThanOrEqual(4);
+});
+```
+
+**Step 5: Write `tests/verify-restart.spec.js`**
+
+Purpose: Play, crash, restart, and play again — verify trail resets and state is clean.
+
+```js
+const { test, expect } = require('@playwright/test');
+
+test('Verify: restart clears trail and resets state', async ({ page }) => {
+  await page.goto('http://localhost:3456/index.html');
+  await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.waitForTimeout(1500);
+
+  const cx = 360, cy = 640;
+  const getBirdY   = () => page.evaluate(() => window.__FLAPPY_BIRD_Y ?? 0);
+  const getTargetY = () => page.evaluate(() => window.__FLAPPY_NEXT_GAP_Y ?? 0);
+  const getScore   = () => page.evaluate(() => window.__FLAPPY_SCORE ?? 0);
+  const isOver     = () => page.evaluate(() => window.__FLAPPY_OVER ?? false);
+
+  // --- Run 1: Play through 2 pipes then crash ---
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(300);
+
+  const start1 = Date.now();
+  while (Date.now() - start1 < 15000) {
+    const [score, over] = await Promise.all([getScore(), isOver()]);
+    if (score >= 2 || over) break;
+    const [birdY, targetY] = await Promise.all([getBirdY(), getTargetY()]);
+    if (birdY < targetY - 0.6) await page.mouse.click(cx, cy);
+    await page.waitForTimeout(50);
+  }
+
+  // Let bird die if not already
+  if (!(await isOver())) {
+    // Stop flapping, let bird fall to death
+    await page.waitForFunction(() => window.__FLAPPY_OVER === true, { timeout: 10000 });
+  }
+
+  // Wait for SYSTEM FAILURE overlay
+  await page.waitForTimeout(1500);
+
+  // --- Restart ---
+  await page.mouse.click(cx, cy); // dismiss overlay → CYBER FLAP screen
+  await page.waitForTimeout(500);
+
+  // Verify score reset
+  const scoreAfterRestart = await page.locator('#score').textContent();
+  expect(scoreAfterRestart).toBe('0');
+
+  // --- Run 2: Play through 2+ pipes to verify trail is fresh ---
+  await page.mouse.click(cx, cy); // start + first flap
+  await page.waitForTimeout(300);
+
+  const start2 = Date.now();
+  while (Date.now() - start2 < 15000) {
+    const [score, over] = await Promise.all([getScore(), isOver()]);
+    if (score >= 2 || over) break;
+    const [birdY, targetY] = await Promise.all([getBirdY(), getTargetY()]);
+    if (birdY < targetY - 0.6) await page.mouse.click(cx, cy);
+    await page.waitForTimeout(50);
+  }
+
+  // Hold to show clean second run
+  await page.waitForTimeout(1500);
+});
+```
+
+**Step 6: Run all verification tests**
 
 Run: `node node_modules/@playwright/test/cli.js test`
-Expected: 3 tests pass.
+Expected: All 8 tests pass (3 existing + 5 new verification tests).
 
-**Step 3: Video verification via Gemini (verify-video skill)**
+**Step 7: Commit**
 
-After e2e tests pass, use the verify-video skill to analyze the Playwright recordings.
+```bash
+git add tests/verify-*.spec.js
+git commit -m "test: add 5 dedicated verification scenarios for game feel features"
+```
 
-**3a: Verify flappy.spec.js recording**
+---
 
-Find the video at `test-results/*/video.webm` for the flappy test. Send to Gemini with this expected behavior:
+### Task 8: Video verification via Gemini
 
-> A cyberpunk-themed flappy bird game. The bird (glowing cyan rectangle) navigates through purple pipe obstacles. KEY THINGS TO VERIFY: (1) Pipes move at a fast, intense pace — noticeably quick. (2) The bird tilts nose-up when flapping and nose-down when falling with smooth transitions, not snapping. (3) A fading cyan neon line trail follows behind the bird during flight. (4) When the bird crashes, the camera shakes briefly (quick jolt, ~0.15s) before the "SYSTEM FAILURE" overlay appears. (5) The bird successfully navigates multiple pipes (score visible). (6) On restart, the trail resets (no lingering trail from previous run).
+Run the verify-video skill on each of the 5 verification test recordings.
 
-Verdict must be PASS on all 6 criteria.
+**Step 1: Locate videos**
 
-**3b: Verify golden.spec.js recording**
+After Task 7's test run, find videos at:
+```
+test-results/Verify-neon-trail-behind-bird/video.webm
+test-results/Verify-bird-rotation-linked-to-velocity/video.webm
+test-results/Verify-screen-shake-on-death/video.webm
+test-results/Verify-fast-pipe-speed/video.webm
+test-results/Verify-restart-clears-trail-and-resets-state/video.webm
+```
 
-Find the golden test video. Send to Gemini with this expected behavior:
+(Exact directory names may vary — use `find test-results -name video.webm` to locate.)
 
-> A cyberpunk flappy bird game where the bird navigates 4+ pipes, then crashes. KEY THINGS TO VERIFY: (1) Fast pipe speed — pipes approach quickly. (2) Smooth bird rotation linked to velocity (tilts up on flap, down on fall). (3) Cyan fading trail behind the bird. (4) On crash: explosion particles + brief camera shake + "SYSTEM FAILURE" overlay appears. (5) Score shows 4 or higher before crash.
+**Step 2: Verify trail video**
 
-Verdict must be PASS.
+Expected behavior for Gemini:
+> A cyberpunk flappy bird game. The bird (glowing cyan/blue shape) navigates through purple pipe obstacles. VERIFY: A fading cyan/blue neon line trail is visible behind the bird during flight. The trail should follow the bird's path, be brightest near the bird, and fade to transparent at its tail end. The bird navigates at least 4 pipes.
 
-**3c: If any verification FAILS**
+**Step 3: Verify rotation video**
 
-- Read Gemini's detailed failure reasoning
-- Identify which feature failed (rotation, trail, shake, speed)
-- Fix the issue in the relevant file
-- Re-run e2e tests to regenerate video
+Expected behavior for Gemini:
+> A cyberpunk flappy bird game. VERIFY: The bird visibly tilts nose-UP when flapping (rotation around z-axis) and tilts nose-DOWN when falling. The transitions between up-tilt and down-tilt should be smooth (gradual lerp), NOT instant snapping. The video shows cycles of rapid flapping followed by pauses to make the rotation changes obvious.
+
+**Step 4: Verify shake video**
+
+Expected behavior for Gemini:
+> A cyberpunk flappy bird game. The bird flies upward aggressively and crashes into a pipe. VERIFY: At the moment of collision, there is a brief camera/screen shake (quick jolt lasting roughly 0.15 seconds). The shake should be visible as rapid small displacements of the entire view. After the shake, an explosion of colorful particles appears and the "SYSTEM FAILURE" overlay text is shown.
+
+**Step 5: Verify speed video**
+
+Expected behavior for Gemini:
+> A cyberpunk flappy bird game. VERIFY: The pipe obstacles move toward the camera at a fast, intense pace. The bird must react quickly to navigate gaps. The pipes should feel noticeably fast — not slow or leisurely. The bird navigates at least 4 pipes, demonstrating the speed is challenging but survivable.
+
+**Step 6: Verify restart video**
+
+Expected behavior for Gemini:
+> A cyberpunk flappy bird game with two play sessions. VERIFY: (1) First session: bird flies with a trail, then crashes. Explosion + "SYSTEM FAILURE" appear. (2) After clicking to restart, score resets to 0, the "CYBER FLAP" title screen appears. (3) Second session begins: bird starts from center with NO lingering trail from the previous run. A fresh trail forms as the bird flies. The second session looks clean, identical to a fresh game start.
+
+**Step 7: Handle failures**
+
+For each FAIL verdict:
+- Read Gemini's detailed reasoning
+- Identify root cause (which feature, which file)
+- Fix the issue
+- Re-run the specific failing verification test: `node node_modules/@playwright/test/cli.js test tests/verify-<name>.spec.js`
 - Re-verify with Gemini
 - Commit the fix
 
-**Step 4: Final commit and push**
+**Step 8: Final commit and push**
 
+Once all 5 verifications PASS:
 ```bash
 git push
 ```
