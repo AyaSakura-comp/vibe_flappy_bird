@@ -652,61 +652,196 @@ git commit -m "test: add 5 dedicated verification scenarios for game feel featur
 
 ---
 
-### Task 8: Video verification via Gemini
+### Task 8: Video verification via Gemini (verify-video skill)
 
-Run the verify-video skill on each of the 5 verification test recordings.
+Use the verify-video skill to analyze each of the 5 verification test recordings. Each step below is a separate Gemini invocation with an exact command.
 
-**Step 1: Locate videos**
+**Step 1: Locate all videos**
 
-After Task 7's test run, find videos at:
-```
-test-results/Verify-neon-trail-behind-bird/video.webm
-test-results/Verify-bird-rotation-linked-to-velocity/video.webm
-test-results/Verify-screen-shake-on-death/video.webm
-test-results/Verify-fast-pipe-speed/video.webm
-test-results/Verify-restart-clears-trail-and-resets-state/video.webm
+```bash
+find test-results -name video.webm
 ```
 
-(Exact directory names may vary — use `find test-results -name video.webm` to locate.)
+Map each video to its test name. The directory names contain the test title (e.g., `Verify-neon-trail-behind-bird`). Store the absolute paths — you'll need them for the `@` file references below.
 
 **Step 2: Verify trail video**
 
-Expected behavior for Gemini:
-> A cyberpunk flappy bird game. The bird (glowing cyan/blue shape) navigates through purple pipe obstacles. VERIFY: A fading cyan/blue neon line trail is visible behind the bird during flight. The trail should follow the bird's path, be brightest near the bird, and fade to transparent at its tail end. The bird navigates at least 4 pipes.
+```bash
+echo 'You are a QA engineer reviewing a screen recording from an automated UI test.
+
+Describe EXACTLY what you observe in this video @VIDEO_PATH step by step in chronological order.
+
+Then compare against this EXPECTED BEHAVIOR:
+
+This is a cyberpunk-themed 3D flappy bird game rendered with Three.js. The bird is a small glowing cyan/blue rectangular shape that flies through purple cylindrical pipe obstacles with pink/magenta cap rings.
+
+SPECIFIC THINGS TO VERIFY — answer YES or NO for each:
+1. TRAIL EXISTENCE: Is there a visible line/streak trailing behind the bird during flight? It should look like a neon cyan/blue line extending backward from the bird.
+2. TRAIL FADING: Does the trail fade from bright (near the bird) to transparent/invisible (at the far end)? It should NOT be a solid uniform line.
+3. TRAIL FOLLOWS PATH: Does the trail curve and follow the bird'"'"'s vertical movement (up when bird flaps, down when bird falls)? It should NOT be a straight horizontal line.
+4. TRAIL LENGTH: Is the trail approximately 1-3x the bird'"'"'s body length? It should NOT be extremely long or just a dot.
+5. SCORE: Does the bird navigate at least 4 pipes (score counter reaches 4+)?
+
+Give a verdict: PASS (all 5 YES) or FAIL (any NO).
+
+If FAIL, explain exhaustively:
+- What specifically was expected vs what actually happened
+- At what point in the video the behavior diverged from expectations
+- What the actual behavior was instead
+- Any visual anomalies, timing issues, missing elements, or incorrect states you noticed
+- Possible root causes based on what you observed
+
+The detailed reasoning is the most important part — describe every discrepancy, no matter how small.' | gemini -m gemini-3-flash-preview -y -e ""
+```
+
+Replace `VIDEO_PATH` with the absolute path found in Step 1. Retry up to 5 times on failure. If quota exhausted, fall back: `gemini-3-flash-preview` → `gemini-3-pro-preview` → `gemini-2.5-pro` → `gemini-2.5-flash`.
 
 **Step 3: Verify rotation video**
 
-Expected behavior for Gemini:
-> A cyberpunk flappy bird game. VERIFY: The bird visibly tilts nose-UP when flapping (rotation around z-axis) and tilts nose-DOWN when falling. The transitions between up-tilt and down-tilt should be smooth (gradual lerp), NOT instant snapping. The video shows cycles of rapid flapping followed by pauses to make the rotation changes obvious.
+```bash
+echo 'You are a QA engineer reviewing a screen recording from an automated UI test.
+
+Describe EXACTLY what you observe in this video @VIDEO_PATH step by step in chronological order.
+
+Then compare against this EXPECTED BEHAVIOR:
+
+This is a cyberpunk-themed 3D flappy bird game. The test deliberately alternates between rapid flapping (3 clicks) and long pauses (1.5s) to make rotation changes obvious.
+
+SPECIFIC THINGS TO VERIFY — answer YES or NO for each:
+1. NOSE-UP ON FLAP: When the bird flaps (moves upward), does its front/nose visibly tilt UPWARD? The bird should rotate clockwise (front tilts up) during upward movement.
+2. NOSE-DOWN ON FALL: When the bird stops flapping and falls, does its front/nose visibly tilt DOWNWARD? The bird should rotate counter-clockwise (front tilts down) during descent.
+3. SMOOTH TRANSITION: Are the rotation transitions gradual and smooth (lerped over several frames), NOT instant snapping from one angle to another? You should see the bird smoothly rotating between positions.
+4. VISIBLE ANGLE: Is the maximum tilt angle noticeable but moderate (roughly 20-35 degrees)? It should NOT be flat (0°) and should NOT be extreme (>60°).
+5. MULTIPLE CYCLES: Does the video show at least 2 clear cycles of flap-up-then-fall-down rotation changes?
+
+Give a verdict: PASS (all 5 YES) or FAIL (any NO).
+
+If FAIL, explain exhaustively:
+- What specifically was expected vs what actually happened
+- At what point in the video the behavior diverged from expectations
+- What the actual behavior was instead
+- Any visual anomalies, timing issues, missing elements, or incorrect states you noticed
+- Possible root causes based on what you observed
+
+The detailed reasoning is the most important part — describe every discrepancy, no matter how small.' | gemini -m gemini-3-flash-preview -y -e ""
+```
 
 **Step 4: Verify shake video**
 
-Expected behavior for Gemini:
-> A cyberpunk flappy bird game. The bird flies upward aggressively and crashes into a pipe. VERIFY: At the moment of collision, there is a brief camera/screen shake (quick jolt lasting roughly 0.15 seconds). The shake should be visible as rapid small displacements of the entire view. After the shake, an explosion of colorful particles appears and the "SYSTEM FAILURE" overlay text is shown.
+```bash
+echo 'You are a QA engineer reviewing a screen recording from an automated UI test.
+
+Describe EXACTLY what you observe in this video @VIDEO_PATH step by step in chronological order.
+
+Then compare against this EXPECTED BEHAVIOR:
+
+This is a cyberpunk-themed 3D flappy bird game. The bird flies upward aggressively (many rapid clicks) and intentionally crashes into the top of a pipe obstacle.
+
+SPECIFIC THINGS TO VERIFY — answer YES or NO for each:
+1. CRASH OCCURS: Does the bird collide with a pipe and the game ends (bird disappears)?
+2. SCREEN SHAKE: At the EXACT moment of collision, does the entire view/camera visibly shake or jitter? This should look like rapid small displacements (a few pixels) of the entire rendered scene, lasting roughly 0.1-0.3 seconds. It is brief and sharp, NOT a slow wobble.
+3. SHAKE IS BRIEF: Does the shake stop quickly (within ~0.2 seconds)? The view should stabilize after the jolt.
+4. EXPLOSION: After the crash, do colorful particles (cyan, pink, orange, white) burst outward from where the bird was?
+5. SYSTEM FAILURE: Does the text "SYSTEM FAILURE" appear as an overlay after the crash (there may be a ~1 second delay)?
+
+Give a verdict: PASS (all 5 YES) or FAIL (any NO).
+
+If FAIL, explain exhaustively:
+- What specifically was expected vs what actually happened
+- At what point in the video the behavior diverged from expectations
+- What the actual behavior was instead
+- Any visual anomalies, timing issues, missing elements, or incorrect states you noticed
+- Possible root causes based on what you observed
+
+The detailed reasoning is the most important part — describe every discrepancy, no matter how small.' | gemini -m gemini-3-flash-preview -y -e ""
+```
 
 **Step 5: Verify speed video**
 
-Expected behavior for Gemini:
-> A cyberpunk flappy bird game. VERIFY: The pipe obstacles move toward the camera at a fast, intense pace. The bird must react quickly to navigate gaps. The pipes should feel noticeably fast — not slow or leisurely. The bird navigates at least 4 pipes, demonstrating the speed is challenging but survivable.
+```bash
+echo 'You are a QA engineer reviewing a screen recording from an automated UI test.
+
+Describe EXACTLY what you observe in this video @VIDEO_PATH step by step in chronological order.
+
+Then compare against this EXPECTED BEHAVIOR:
+
+This is a cyberpunk-themed 3D flappy bird game where pipe obstacles approach the camera from the distance.
+
+SPECIFIC THINGS TO VERIFY — answer YES or NO for each:
+1. FAST PACE: Do the pipes move toward the camera at a fast, intense pace? They should approach noticeably quickly — a new pipe should arrive roughly every 1-2 seconds. The game should feel urgent and twitchy, NOT slow or relaxed.
+2. QUICK REACTIONS: Does the bird need to react frequently (multiple flaps per pipe gap)? The bot should be clicking rapidly to keep up.
+3. PIPE COUNT: Does the bird successfully navigate at least 4 pipes (score reaches 4+)?
+4. CONTINUOUS FLOW: Are pipes continuously spawning from the distance? There should never be a long gap with no pipes visible.
+5. CHALLENGING: Does the gameplay look challenging — the bird narrowly making it through gaps rather than leisurely floating through?
+
+Give a verdict: PASS (all 5 YES) or FAIL (any NO).
+
+If FAIL, explain exhaustively:
+- What specifically was expected vs what actually happened
+- At what point in the video the behavior diverged from expectations
+- What the actual behavior was instead
+- Any visual anomalies, timing issues, missing elements, or incorrect states you noticed
+- Possible root causes based on what you observed
+
+The detailed reasoning is the most important part — describe every discrepancy, no matter how small.' | gemini -m gemini-3-flash-preview -y -e ""
+```
 
 **Step 6: Verify restart video**
 
-Expected behavior for Gemini:
-> A cyberpunk flappy bird game with two play sessions. VERIFY: (1) First session: bird flies with a trail, then crashes. Explosion + "SYSTEM FAILURE" appear. (2) After clicking to restart, score resets to 0, the "CYBER FLAP" title screen appears. (3) Second session begins: bird starts from center with NO lingering trail from the previous run. A fresh trail forms as the bird flies. The second session looks clean, identical to a fresh game start.
+```bash
+echo 'You are a QA engineer reviewing a screen recording from an automated UI test.
+
+Describe EXACTLY what you observe in this video @VIDEO_PATH step by step in chronological order.
+
+Then compare against this EXPECTED BEHAVIOR:
+
+This is a cyberpunk-themed 3D flappy bird game. The test plays TWO separate game sessions with a restart in between.
+
+SPECIFIC THINGS TO VERIFY — answer YES or NO for each:
+1. FIRST SESSION: Does the bird fly and navigate through at least 1-2 pipes in the first session? A cyan trail should be visible behind the bird.
+2. CRASH AND OVERLAY: Does the bird crash, showing an explosion and then a "SYSTEM FAILURE" overlay with the score?
+3. RESTART TRANSITION: After clicking to restart, does the screen show the "CYBER FLAP" title with "CLICK OR SPACE TO JACK IN"? The score display should reset to 0.
+4. CLEAN SECOND SESSION: When the second session starts, does the bird appear at the CENTER of the screen with NO lingering trail from the first session? The trail should only begin forming as the bird starts moving in the new session.
+5. SECOND SESSION PLAYS: Does the bird fly and navigate through pipes in the second session, with a fresh new trail forming behind it?
+
+Give a verdict: PASS (all 5 YES) or FAIL (any NO).
+
+If FAIL, explain exhaustively:
+- What specifically was expected vs what actually happened
+- At what point in the video the behavior diverged from expectations
+- What the actual behavior was instead
+- Any visual anomalies, timing issues, missing elements, or incorrect states you noticed
+- Possible root causes based on what you observed
+
+The detailed reasoning is the most important part — describe every discrepancy, no matter how small.' | gemini -m gemini-3-flash-preview -y -e ""
+```
 
 **Step 7: Handle failures**
 
-For each FAIL verdict:
-- Read Gemini's detailed reasoning
-- Identify root cause (which feature, which file)
-- Fix the issue
-- Re-run the specific failing verification test: `node node_modules/@playwright/test/cli.js test tests/verify-<name>.spec.js`
-- Re-verify with Gemini
-- Commit the fix
+For each FAIL verdict from Gemini:
+1. Read Gemini's detailed failure reasoning — it will specify which numbered check failed
+2. Map the failure to the responsible module:
+   - Trail checks → `js/trail.js` or trail integration in `js/game.js`
+   - Rotation checks → rotation lerp in `js/game.js` loop
+   - Shake checks → shake logic in `js/game.js`
+   - Speed checks → `PIPE_SPEED` in `js/constants.js`
+   - Restart checks → `restartGame()` in `js/game.js`, `resetTrail()` in `js/trail.js`
+3. Fix the issue in the identified file
+4. Re-run ONLY the specific failing test:
+   ```bash
+   node node_modules/@playwright/test/cli.js test tests/verify-<name>.spec.js
+   ```
+5. Re-run the verify-video command for that specific test
+6. Repeat until PASS
+7. Commit the fix:
+   ```bash
+   git add <fixed-files>
+   git commit -m "fix: <description of what was wrong>"
+   ```
 
-**Step 8: Final commit and push**
+**Step 8: Final push**
 
-Once all 5 verifications PASS:
+Once ALL 5 verify-video checks return PASS:
 ```bash
 git push
 ```
