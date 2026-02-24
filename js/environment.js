@@ -1,21 +1,14 @@
 const THREE = window.THREE;
 
 function createGradientBackground(scene) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 360);
-  gradient.addColorStop(0, '#1a0033');
-  gradient.addColorStop(0.6, '#0a0018');
-  gradient.addColorStop(1, '#000005');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 512);
-  const texture = new THREE.CanvasTexture(canvas);
-  const geo = new THREE.PlaneGeometry(120, 80);
-  const mat = new THREE.MeshBasicMaterial({ map: texture });
+  // Solid purple sky background — clearly visible from the angled camera
+  scene.background = new THREE.Color(0x1a0044);
+
+  // Brighter purple horizon glow plane — solid color, no transparency issues
+  const geo = new THREE.PlaneGeometry(200, 120);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x2d0066 });
   const plane = new THREE.Mesh(geo, mat);
-  plane.position.set(0, 5, -35);
+  plane.position.set(0, 8, -31);
   scene.add(plane);
 }
 

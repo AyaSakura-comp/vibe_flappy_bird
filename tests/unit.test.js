@@ -30,6 +30,7 @@ const mockScene = () => {
   const children = [];
   return {
     children,
+    background: null,
     add(obj) { children.push(obj); },
     remove(obj) {
       const i = children.indexOf(obj);
@@ -273,11 +274,12 @@ describe('createEnvironment', () => {
     assert.equal(typeof result.envState, 'object');
   });
 
-  it('adds a background gradient plane behind the scene (z <= -30)', () => {
+  it('sets scene.background and adds a background plane at z <= -30', () => {
     const scene = mockScene();
     createEnvironment(scene);
+    assert.ok(scene.background, 'scene.background should be set');
     const bgPlanes = scene.children.filter(c => c.position && c.position.z <= -30);
-    assert.ok(bgPlanes.length >= 1, 'should have a background gradient plane at z <= -30');
+    assert.ok(bgPlanes.length >= 1, `expected >= 1 background plane at z <= -30, got ${bgPlanes.length}`);
   });
 });
 
