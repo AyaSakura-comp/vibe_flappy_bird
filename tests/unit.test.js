@@ -38,6 +38,17 @@ const mockScene = () => {
   };
 };
 
+globalThis.document = globalThis.document || {
+  createElement: () => ({
+    width: 0, height: 0,
+    getContext: () => ({
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      fillRect: () => {},
+      set fillStyle(_) {},
+    }),
+  }),
+};
+
 globalThis.window = {
   THREE: {
     Group: class {
@@ -76,6 +87,9 @@ globalThis.window = {
       constructor() { this.position = mockVec3(); }
     },
     Color: class { constructor() {} },
+    CanvasTexture: class {
+      constructor(canvas) { this.image = canvas; this.needsUpdate = false; }
+    },
     BufferGeometry: class {
       constructor() {
         this.attributes = {};
@@ -257,6 +271,13 @@ describe('createEnvironment', () => {
     const result = createEnvironment(scene);
     assert.ok(result.envState, 'should return envState');
     assert.equal(typeof result.envState, 'object');
+  });
+
+  it('adds a background gradient plane behind the scene (z <= -30)', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    const bgPlanes = scene.children.filter(c => c.position && c.position.z <= -30);
+    assert.ok(bgPlanes.length >= 1, 'should have a background gradient plane at z <= -30');
   });
 });
 

@@ -1,5 +1,24 @@
 const THREE = window.THREE;
 
+function createGradientBackground(scene) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 360);
+  gradient.addColorStop(0, '#1a0033');
+  gradient.addColorStop(0.6, '#0a0018');
+  gradient.addColorStop(1, '#000005');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 512);
+  const texture = new THREE.CanvasTexture(canvas);
+  const geo = new THREE.PlaneGeometry(120, 80);
+  const mat = new THREE.MeshBasicMaterial({ map: texture });
+  const plane = new THREE.Mesh(geo, mat);
+  plane.position.set(0, 5, -35);
+  scene.add(plane);
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -11,6 +30,8 @@ export function createEnvironment(scene) {
   const magentaLight = new THREE.PointLight(0xff00aa, 1.2, 30);
   magentaLight.position.set(3, -2, 4);
   scene.add(magentaLight);
+
+  createGradientBackground(scene);
 
   // Ground — extend along the diagonal the camera sees
   const groundGeo = new THREE.PlaneGeometry(60, 60, 30, 30);
