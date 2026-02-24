@@ -42,6 +42,28 @@ function createRetroSun(scene) {
   scene.add(group);
 }
 
+function createDigitalRain(scene, envState) {
+  const rainDrops = [];
+  const rainMat1 = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
+  const rainMat2 = new THREE.MeshBasicMaterial({ color: 0xff00aa, transparent: true, opacity: 0.4 });
+
+  for (let i = 0; i < 50; i++) {
+    const geo = new THREE.BoxGeometry(0.12, 0.6 + Math.random() * 0.8, 0.12);
+    const mat = Math.random() > 0.3 ? rainMat1 : rainMat2;
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(
+      (Math.random() - 0.5) * 24,
+      Math.random() * 20 + 5,
+      -5 - Math.random() * 10
+    );
+    const speed = 0.05 + Math.random() * 0.08;
+    scene.add(mesh);
+    rainDrops.push({ mesh, speed });
+  }
+
+  envState.rainDrops = rainDrops;
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -138,9 +160,18 @@ export function createEnvironment(scene) {
   });
 
   const envState = {};
+  createDigitalRain(scene, envState);
   return { cyanLight, magentaLight, envState };
 }
 
 export function updateEnvironment(envState, dt) {
-  // animated effects will be added in subsequent tasks
+  if (envState.rainDrops) {
+    for (const drop of envState.rainDrops) {
+      drop.mesh.position.y -= drop.speed * dt;
+      if (drop.mesh.position.y < -7) {
+        drop.mesh.position.y = 15 + Math.random() * 10;
+        drop.mesh.position.x = (Math.random() - 0.5) * 30;
+      }
+    }
+  }
 }

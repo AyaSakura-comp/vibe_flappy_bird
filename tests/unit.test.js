@@ -295,6 +295,14 @@ describe('createEnvironment', () => {
     assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings, got ${distantBuildings.length}`);
   });
 
+  it('envState.rainDrops has 40-60 particles', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    assert.ok(envState.rainDrops, 'should have rainDrops array');
+    assert.ok(envState.rainDrops.length >= 40, `expected >= 40 rain drops, got ${envState.rainDrops.length}`);
+    assert.ok(envState.rainDrops.length <= 60, `expected <= 60 rain drops, got ${envState.rainDrops.length}`);
+  });
+
   it('adds a retro sun with slice lines near the horizon', () => {
     const scene = mockScene();
     createEnvironment(scene);
@@ -313,6 +321,22 @@ describe('updateEnvironment', () => {
   });
   it('does not throw with empty envState', () => {
     assert.doesNotThrow(() => updateEnvironment({}, 1));
+  });
+  it('updateEnvironment moves rain drops downward', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    const firstDrop = envState.rainDrops[0];
+    const startY = firstDrop.mesh.position.y;
+    updateEnvironment(envState, 1);
+    assert.ok(firstDrop.mesh.position.y < startY, 'rain drop should move down');
+  });
+  it('updateEnvironment resets rain drops that fall below ground', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    const drop = envState.rainDrops[0];
+    drop.mesh.position.y = -10;
+    updateEnvironment(envState, 1);
+    assert.ok(drop.mesh.position.y > 0, 'rain drop should reset to top');
   });
 });
 
