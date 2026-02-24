@@ -122,7 +122,7 @@ globalThis.window = {
 const { checkCollision } = await import('../js/collision.js');
 const {
   GRAVITY, FLAP, PIPE_GAP, PIPE_SPEED, PIPE_SPACING,
-  SPAWN_MS, PIPE_Y_PATTERN, EXPLOSION_COLORS,
+  SPAWN_MS, PIPE_Y_PATTERN, EXPLOSION_COLORS, PIPE_REMOVE_Z,
 } = await import('../js/constants.js');
 const { createBird } = await import('../js/bird.js');
 const { createEnvironment } = await import('../js/environment.js');
@@ -183,6 +183,9 @@ describe('constants', () => {
   });
   it('EXPLOSION_COLORS has 5 entries', () => {
     assert.equal(EXPLOSION_COLORS.length, 5);
+  });
+  it('PIPE_REMOVE_Z is far enough for angled camera visibility', () => {
+    assert.ok(PIPE_REMOVE_Z >= 12, 'pipes should persist until well past camera at z=15');
   });
 });
 

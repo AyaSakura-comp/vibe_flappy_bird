@@ -1,4 +1,4 @@
-import { GRAVITY, FLAP, PIPE_SPEED, SPAWN_MS } from './constants.js';
+import { GRAVITY, FLAP, PIPE_SPEED, SPAWN_MS, PIPE_REMOVE_Z } from './constants.js';
 import { createBird } from './bird.js';
 import { createEnvironment } from './environment.js';
 import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.js';
@@ -139,7 +139,7 @@ function loop(now) {
         scoreEl.textContent = score;
       }
 
-      if (p.group.position.z > 2) {
+      if (p.group.position.z > PIPE_REMOVE_Z) {
         scene.remove(p.group);
         pipes.splice(i, 1);
         continue;
