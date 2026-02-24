@@ -7,17 +7,21 @@ A cyberpunk-themed Flappy Bird clone built with Three.js (r128 via CDN).
 ```
 index.html          — HTML/CSS only (title screen, score HUD, overlays)
 js/
-  constants.js      — Game tuning: GRAVITY, FLAP, PIPE_GAP, PIPE_SPEED, etc.
+  constants.js      — Game tuning: GRAVITY, FLAP, PIPE_GAP, PIPE_SPEED, PIPE_REMOVE_Z, etc.
   collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin)
   explosion.js      — Particle system: spawnExplosion(), updateExplosion(), clearParticles()
   bird.js           — createBird(scene) → { birdGroup, eng }
   pipes.js          — makePipeSegment(), spawnPipe(), prefillPipes(), resetPipes(), pipes array
+  trail.js          — Neon data trail: createTrail(), updateTrail(), resetTrail()
   environment.js    — Ground, grid, skyline, lighting → { cyanLight, magentaLight }
   game.js           — Main orchestrator: state, input, game loop, window.__FLAPPY_* test API
 tests/
-  flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
+  unit.test.js      — 38 unit tests (node:test) covering all modules
+  flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright, flaky)
   collision.spec.js — Collision test: bird dies on cap contact (Playwright)
   golden.spec.js    — Golden test: navigate 4+ pipes, crash, verify SYSTEM FAILURE
+  record-gameplay.spec.js — Record gameplay video with AI bot (score >= 2)
+docs/plans/         — Design and implementation plan documents
 golden/
   before-refactor.webm  — Reference video from pre-module extraction
   after-refactor.webm   — Reference video after module extraction
@@ -47,3 +51,13 @@ node node_modules/@playwright/test/cli.js test
 - `flappy.spec.js` uses an adaptive AI that flaps toward `__FLAPPY_NEXT_GAP_Y`; can be flaky under resource contention
 - Tests require Playwright browsers installed (`npx playwright install`)
 - Videos are recorded automatically by Playwright config
+- `record-gameplay.spec.js` is the most reliable E2E test (score >= 2); use it for video verification
+- Unit tests: `npm run test:unit` (38 tests, all modules)
+
+## Camera & Environment
+
+- Camera at 45-degree over-the-shoulder angle: position `(15, 5, 15)` looking at origin
+- Buildings positioned at z=-16 to -22 with 3D depth (2-3.5 units) for visibility from angled camera
+- Ground/grid at z=-10, sized 60x60
+- Pipes removed at `PIPE_REMOVE_Z=15` (past the camera) so they persist after the bird passes
+- Bird trail spreads in +Z direction (toward camera) to appear behind the bird
