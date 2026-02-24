@@ -23,16 +23,17 @@ function createRetroSun(scene) {
   group.position.set(-9, 2, -9);
   group.lookAt(15, 5, 15);
 
-  const sunGeo = new THREE.CircleGeometry(6, 32);
+  // Radius 1.2 → ~4° angular size at depth 33.7 (~25% of 17° hFOV — tasteful)
+  const sunGeo = new THREE.CircleGeometry(1.2, 32);
   const sunMat = new THREE.MeshBasicMaterial({ color: 0xff4400, side: THREE.DoubleSide });
   group.add(new THREE.Mesh(sunGeo, sunMat));
 
   const sliceMat = new THREE.MeshBasicMaterial({ color: 0x1a0044, side: THREE.DoubleSide });
   for (let i = 0; i < 5; i++) {
-    const thickness = 0.25 + i * 0.18;
-    const sliceGeo = new THREE.BoxGeometry(16, thickness, 0.2);
+    const thickness = 0.04 + i * 0.03;
+    const sliceGeo = new THREE.BoxGeometry(2.8, thickness, 0.2);
     const slice = new THREE.Mesh(sliceGeo, sliceMat);
-    slice.position.set(0, -1.2 - i * 1.6, 0.05);
+    slice.position.set(0, -0.2 - i * 0.26, 0.05);
     group.add(slice);
   }
   scene.add(group);
@@ -122,47 +123,51 @@ export function createEnvironment(scene) {
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
 
-  // Near buildings: along diagonal, spread left/right with camera-right vector
+  // Buildings placed along the x≈z diagonal — the camera's view center line.
+  // Verified by projection math: screenX = 0.707*(x-z)/depth, so x≈z keeps buildings
+  // centered. Small x-z offsets (±3) spread them left/right without going off-screen.
+  // Near row (depth 32-40), far row (depth 40-50), all visible from camera.
   const buildingDefs = [
-    { x: -25.0, w: 3.0, d: 3.0, h:  8, z:  -5.2 },
-    { x: -24.3, w: 2.5, d: 2.5, h: 14, z: -10.1 },
-    { x: -23.5, w: 3.5, d: 3.0, h: 11, z: -15.0 },
-    { x: -22.1, w: 2.0, d: 2.5, h: 16, z: -19.2 },
-    { x: -19.2, w: 2.0, d: 2.5, h: 16, z: -22.1 },
-    { x: -15.0, w: 3.0, d: 3.0, h: 12, z: -23.5 },
-    { x: -10.1, w: 2.5, d: 2.5, h:  9, z: -24.3 },
-    { x:  -5.2, w: 3.5, d: 3.0, h:  7, z: -25.0 },
+    // x,   w,   d,  h,    z      (x≈z ± small offset)
+    { x:  -8, w: 2.0, d: 2.0, h: 10, z:  -8 }, // center, nearest
+    { x:  -9, w: 1.8, d: 1.8, h: 14, z: -12 }, // slight right
+    { x: -12, w: 2.0, d: 2.0, h:  9, z:  -9 }, // slight left
+    { x: -13, w: 1.5, d: 1.5, h: 18, z: -13 }, // center, mid depth
+    { x: -14, w: 1.8, d: 1.8, h: 12, z: -17 }, // slight right
+    { x: -17, w: 2.0, d: 2.0, h:  8, z: -14 }, // slight left
+    { x: -18, w: 1.5, d: 1.5, h: 20, z: -18 }, // center, deeper
+    { x: -20, w: 1.8, d: 1.8, h: 15, z: -20 }, // center, deepest near
   ];
 
   buildingDefs.forEach(({ x, w, d, h, z }) => {
     const geo  = new THREE.BoxGeometry(w, h, d);
     const mesh = new THREE.Mesh(geo, buildingMat);
     mesh.position.set(x, h / 2 - 6.2, z);
-    mesh.rotation.y = Math.PI / 4; // 45° so camera sees corner, not flat face
+    mesh.rotation.y = Math.PI / 4;
     scene.add(mesh);
 
-    for (let i = 0; i < 5; i++) {
-      const wGeo = new THREE.BoxGeometry(0.18, 0.18, 0.05);
+    for (let i = 0; i < 4; i++) {
+      const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
       const mat  = Math.random() > 0.5 ? windowMat : winMat2;
       const win  = new THREE.Mesh(wGeo, mat);
       win.position.set(
-        x + (Math.random() - 0.5) * (w - 0.4),
-        (Math.random() - 0.5) * (h - 0.4) + h / 2 - 6.2,
+        x + (Math.random() - 0.5) * (w - 0.3),
+        (Math.random() - 0.5) * (h - 0.5) + h / 2 - 6.2,
         z + d / 2 + 0.05
       );
       scene.add(win);
     }
   });
 
-  // Far buildings — darker, taller, further along diagonal
+  // Far row — darker silhouettes, all along x≈z diagonal
   const distantBuildingMat = new THREE.MeshLambertMaterial({ color: 0x0c0020 });
   const distantDefs = [
-    { x: -28.0, w: 4.0, d: 2.0, h: 20, z:  -8.0 },
-    { x: -26.5, w: 3.0, d: 2.0, h: 18, z: -13.5 },
-    { x: -24.8, w: 3.5, d: 2.0, h: 22, z: -18.5 },
-    { x: -18.5, w: 3.5, d: 2.0, h: 22, z: -24.8 },
-    { x: -13.5, w: 3.0, d: 2.0, h: 18, z: -26.5 },
-    { x:  -8.0, w: 4.0, d: 2.0, h: 20, z: -28.0 },
+    { x: -22, w: 2.5, d: 2.0, h: 22, z: -22 },
+    { x: -23, w: 2.0, d: 1.8, h: 16, z: -26 }, // slight right
+    { x: -26, w: 2.0, d: 1.8, h: 14, z: -23 }, // slight left
+    { x: -27, w: 2.5, d: 2.0, h: 24, z: -27 },
+    { x: -28, w: 2.0, d: 1.8, h: 18, z: -24 }, // slight left
+    { x: -24, w: 2.0, d: 1.8, h: 20, z: -28 }, // slight right
   ];
 
   distantDefs.forEach(({ x, w, d, h, z }) => {
@@ -172,12 +177,12 @@ export function createEnvironment(scene) {
     mesh.rotation.y = Math.PI / 4;
     scene.add(mesh);
 
-    for (let i = 0; i < 3; i++) {
-      const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
+    for (let i = 0; i < 2; i++) {
+      const wGeo = new THREE.BoxGeometry(0.12, 0.12, 0.05);
       const win  = new THREE.Mesh(wGeo, windowMat);
       win.position.set(
-        x + (Math.random() - 0.5) * (w - 0.4),
-        (Math.random() - 0.5) * (h - 0.4) + h / 2 - 6.2,
+        x + (Math.random() - 0.5) * (w - 0.3),
+        (Math.random() - 0.5) * (h - 0.5) + h / 2 - 6.2,
         z + d / 2 + 0.05
       );
       scene.add(win);

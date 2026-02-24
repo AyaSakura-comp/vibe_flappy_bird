@@ -297,9 +297,9 @@ describe('createEnvironment', () => {
   it('has a second row of distant buildings along the diagonal', () => {
     const scene = mockScene();
     createEnvironment(scene);
-    // Far buildings along diagonal: x <= -8 and at varying z
+    // Far buildings along diagonal: x <= -20 and z <= -20
     const distantBuildings = scene.children.filter(c =>
-      c.position && c.position.x <= -8 && c.position.z <= -8 &&
+      c.position && c.position.x <= -20 && c.position.z <= -20 &&
       c.position.y > -6
     );
     assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings along diagonal, got ${distantBuildings.length}`);
