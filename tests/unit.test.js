@@ -67,6 +67,9 @@ globalThis.window = {
     CylinderGeometry: class { constructor() {} },
     SphereGeometry: class { constructor() {} },
     PlaneGeometry: class { constructor() {} },
+    IcosahedronGeometry: class { constructor() {} },
+    TorusGeometry: class { constructor() {} },
+    OctahedronGeometry: class { constructor() {} },
     Mesh: class {
       constructor(geo, mat) {
         Object.assign(this, mockMesh(geo, mat));
@@ -295,6 +298,13 @@ describe('createEnvironment', () => {
     assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings, got ${distantBuildings.length}`);
   });
 
+  it('envState.parallaxObjects has 3 wireframe objects', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    assert.ok(envState.parallaxObjects, 'should have parallaxObjects array');
+    assert.equal(envState.parallaxObjects.length, 3);
+  });
+
   it('envState.rainDrops has 40-60 particles', () => {
     const scene = mockScene();
     const { envState } = createEnvironment(scene);
@@ -322,6 +332,19 @@ describe('updateEnvironment', () => {
   it('does not throw with empty envState', () => {
     assert.doesNotThrow(() => updateEnvironment({}, 1));
   });
+  it('updateEnvironment rotates parallax wireframes', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    const obj = envState.parallaxObjects[0];
+    const startRotX = obj.mesh.rotation.x;
+    const startRotY = obj.mesh.rotation.y;
+    updateEnvironment(envState, 1);
+    assert.ok(
+      obj.mesh.rotation.x !== startRotX || obj.mesh.rotation.y !== startRotY,
+      'parallax object should rotate'
+    );
+  });
+
   it('updateEnvironment moves rain drops downward', () => {
     const scene = mockScene();
     const { envState } = createEnvironment(scene);

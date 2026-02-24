@@ -64,6 +64,26 @@ function createDigitalRain(scene, envState) {
   envState.rainDrops = rainDrops;
 }
 
+function createParallaxWireframes(scene, envState) {
+  const parallaxObjects = [];
+
+  const defs = [
+    { geo: new THREE.IcosahedronGeometry(3, 0), x: -8, y: 3, z: -14, speedX: 0.003, speedY: 0.005 },
+    { geo: new THREE.TorusGeometry(2.5, 0.3, 8, 16), x: 6, y: 4, z: -16, speedX: 0.004, speedY: 0.002 },
+    { geo: new THREE.OctahedronGeometry(2, 0), x: 0, y: 5, z: -12, speedX: 0.002, speedY: 0.006 },
+  ];
+
+  defs.forEach(({ geo, x, y, z, speedX, speedY }) => {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xaa00ff, wireframe: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    parallaxObjects.push({ mesh, speedX, speedY });
+  });
+
+  envState.parallaxObjects = parallaxObjects;
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -161,6 +181,7 @@ export function createEnvironment(scene) {
 
   const envState = {};
   createDigitalRain(scene, envState);
+  createParallaxWireframes(scene, envState);
   return { cyanLight, magentaLight, envState };
 }
 
@@ -172,6 +193,13 @@ export function updateEnvironment(envState, dt) {
         drop.mesh.position.y = 15 + Math.random() * 10;
         drop.mesh.position.x = (Math.random() - 0.5) * 30;
       }
+    }
+  }
+
+  if (envState.parallaxObjects) {
+    for (const obj of envState.parallaxObjects) {
+      obj.mesh.rotation.x += obj.speedX * dt;
+      obj.mesh.rotation.y += obj.speedY * dt;
     }
   }
 }
