@@ -74,7 +74,7 @@ function _rebuildBuffer(points) {
     const wobble = Math.sin(i * 1.2) * X_WOBBLE * t;
     pos[i * 3]     = history[i].x + wobble;
     pos[i * 3 + 1] = history[i].y;
-    pos[i * 3 + 2] = history[i].z;
+    pos[i * 3 + 2] = history[i].z + i * 0.18;
     col[i * 3]     = 0;
     col[i * 3 + 1] = 1 - t * 0.9;
     col[i * 3 + 2] = 1 - t * 0.9;

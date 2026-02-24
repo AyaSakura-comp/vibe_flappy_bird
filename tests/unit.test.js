@@ -379,10 +379,10 @@ describe('trail', () => {
     trailMod.updateTrail(trail, 1, 2.5, -0.3);
     const posArr = trail.geometry.attributes.position.array;
     assert.equal(posArr[1], 2.5);   // y of head matches
-    assert.ok(posArr[2] <= -0.3);   // z is at or behind bird
+    assert.ok(posArr[2] >= -0.5);   // z is near bird position
   });
 
-  it('trail points z values match stored history (no artificial offset)', () => {
+  it('trail points spread in +Z direction behind bird (toward camera)', () => {
     const scene = mockScene();
     const trail = trailMod.createTrail(scene);
     // Feed several positions to build history
@@ -391,10 +391,10 @@ describe('trail', () => {
     }
     const posArr = trail.geometry.attributes.position.array;
     const history = trail.userData.history;
-    // Each point's z should equal the stored history z (no artificial - i * 0.15 offset)
-    for (let i = 0; i < history.length; i++) {
-      assert.equal(posArr[i * 3 + 2], history[i].z,
-        `point ${i} z should match history z without offset`);
+    // Older points (higher index) should have higher z (spread toward camera)
+    for (let i = 1; i < history.length; i++) {
+      assert.ok(posArr[i * 3 + 2] >= posArr[(i - 1) * 3 + 2],
+        `point ${i} z should be >= point ${i-1} z (spreading behind bird)`);
     }
   });
 
