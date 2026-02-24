@@ -23,6 +23,7 @@ function mockMesh(geo, mat) {
     rotation: mockVec3(),
     scale: { setScalar(s) { this.x = s; this.y = s; this.z = s; }, x: 1, y: 1, z: 1 },
     visible: true,
+    lookAt() {},
   };
 }
 
@@ -59,6 +60,7 @@ globalThis.window = {
         this.rotation = mockVec3();
       }
       add(c) { this.children.push(c); }
+      lookAt() {}
     },
     BoxGeometry: class { constructor() {} },
     CircleGeometry: class { constructor() {} },
@@ -283,14 +285,24 @@ describe('createEnvironment', () => {
     assert.ok(bgPlanes.length >= 1, `expected >= 1 background plane at z <= -30, got ${bgPlanes.length}`);
   });
 
+  it('has a second row of distant buildings at z=-24 to -28', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    const distantBuildings = scene.children.filter(c =>
+      c.position && c.position.z <= -24 && c.position.z >= -28 &&
+      c.position.y > -6
+    );
+    assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings, got ${distantBuildings.length}`);
+  });
+
   it('adds a retro sun with slice lines near the horizon', () => {
     const scene = mockScene();
     createEnvironment(scene);
-    // Sun circle + 5 slice lines at y>=0 and z<=-27
-    const sunObjects = scene.children.filter(c =>
-      c.position && c.position.y >= 0 && c.position.z <= -27
+    // Sun group behind buildings (z <= -17), group contains disc + slices
+    const sunGroups = scene.children.filter(c =>
+      c.position && c.position.z <= -21 && c.children && c.children.length >= 5
     );
-    assert.ok(sunObjects.length >= 6, `expected >= 6 sun objects, got ${sunObjects.length}`);
+    assert.ok(sunGroups.length >= 1, `expected >= 1 sun group at z<=-17, got ${sunGroups.length}`);
   });
 });
 

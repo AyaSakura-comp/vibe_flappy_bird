@@ -13,23 +13,33 @@ function createGradientBackground(scene) {
 }
 
 function createRetroSun(scene) {
-  // Sun disc — orange/magenta at horizon behind buildings
-  const sunGeo = new THREE.CircleGeometry(6, 32);
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xff5500 });
-  const sun = new THREE.Mesh(sunGeo, sunMat);
-  sun.position.set(-3, 6, -28);
-  scene.add(sun);
+  // Sun disc — placed along the camera view ray, rotated to face the camera
+  // Camera is at (15,5,15) looking at (0,0,0). View ray center at z=-20 is ~(-20,-6.7,-20).
+  // Use a Group so slices stay relative to the sun disc in local space.
+  // Push sun further back so buildings don't bisect it
+  const SUN_X = -22, SUN_Y = -3, SUN_Z = -22;
 
-  // Horizontal slice lines (5 lines cutting through lower half of sun)
-  // These are the same color as the background to create the "cut" effect
-  const sliceMat = new THREE.MeshBasicMaterial({ color: 0x1a0044 });
-  for (let i = 0; i < 5; i++) {
-    const thickness = 0.12 + i * 0.10;
-    const sliceGeo = new THREE.BoxGeometry(14, thickness, 0.1);
+  const group = new THREE.Group();
+  group.position.set(SUN_X, SUN_Y, SUN_Z);
+  group.lookAt(15, 5, 15);
+
+  // Sun disc in local XY plane (facing +Z before rotation)
+  const sunGeo = new THREE.CircleGeometry(8, 32);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xff4400, side: THREE.DoubleSide });
+  const sun = new THREE.Mesh(sunGeo, sunMat);
+  group.add(sun);
+
+  // Horizontal slice lines in local space — only 4 thin lines in the lower half
+  const sliceMat = new THREE.MeshBasicMaterial({ color: 0x1a0044, side: THREE.DoubleSide });
+  for (let i = 0; i < 4; i++) {
+    const thickness = 0.25 + i * 0.15;
+    const sliceGeo = new THREE.BoxGeometry(18, thickness, 0.2);
     const slice = new THREE.Mesh(sliceGeo, sliceMat);
-    slice.position.set(-3, 6 - 1.2 - i * 1.1, -27.9);
-    scene.add(slice);
+    slice.position.set(0, -1.5 - i * 1.8, 0.05);
+    group.add(slice);
   }
+
+  scene.add(group);
 }
 
 export function createEnvironment(scene) {
@@ -89,6 +99,35 @@ export function createEnvironment(scene) {
       const wGeo = new THREE.BoxGeometry(0.18, 0.18, 0.05);
       const mat  = Math.random() > 0.5 ? windowMat : winMat2;
       const win  = new THREE.Mesh(wGeo, mat);
+      win.position.set(
+        x + (Math.random() - 0.5) * (w - 0.4),
+        (Math.random() - 0.5) * (h - 0.4) + h / 2 - 6.2,
+        z + d / 2 + 0.05
+      );
+      scene.add(win);
+    }
+  });
+
+  // Distant skyline — taller, darker silhouettes for depth
+  const distantBuildingMat = new THREE.MeshBasicMaterial({ color: 0x040010 });
+  const distantDefs = [
+    { x: -14, w: 4.0, d: 2.0, h: 20, z: -26 },
+    { x:  -8, w: 3.0, d: 2.5, h: 14, z: -25 },
+    { x:  -3, w: 3.5, d: 2.0, h: 22, z: -27 },
+    { x:   2, w: 2.5, d: 2.5, h: 12, z: -26 },
+    { x:   7, w: 4.0, d: 2.0, h: 24, z: -25 },
+    { x:  13, w: 3.0, d: 2.5, h: 16, z: -27 },
+  ];
+
+  distantDefs.forEach(({ x, w, d, h, z }) => {
+    const geo  = new THREE.BoxGeometry(w, h, d);
+    const mesh = new THREE.Mesh(geo, distantBuildingMat);
+    mesh.position.set(x, h / 2 - 6.2, z);
+    scene.add(mesh);
+
+    for (let i = 0; i < 4; i++) {
+      const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
+      const win  = new THREE.Mesh(wGeo, windowMat);
       win.position.set(
         x + (Math.random() - 0.5) * (w - 0.4),
         (Math.random() - 0.5) * (h - 0.4) + h / 2 - 6.2,
