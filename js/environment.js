@@ -12,6 +12,26 @@ function createGradientBackground(scene) {
   scene.add(plane);
 }
 
+function createRetroSun(scene) {
+  // Sun disc — orange/magenta at horizon behind buildings
+  const sunGeo = new THREE.CircleGeometry(6, 32);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xff5500 });
+  const sun = new THREE.Mesh(sunGeo, sunMat);
+  sun.position.set(-3, 6, -28);
+  scene.add(sun);
+
+  // Horizontal slice lines (5 lines cutting through lower half of sun)
+  // These are the same color as the background to create the "cut" effect
+  const sliceMat = new THREE.MeshBasicMaterial({ color: 0x1a0044 });
+  for (let i = 0; i < 5; i++) {
+    const thickness = 0.12 + i * 0.10;
+    const sliceGeo = new THREE.BoxGeometry(14, thickness, 0.1);
+    const slice = new THREE.Mesh(sliceGeo, sliceMat);
+    slice.position.set(-3, 6 - 1.2 - i * 1.1, -27.9);
+    scene.add(slice);
+  }
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -25,6 +45,7 @@ export function createEnvironment(scene) {
   scene.add(magentaLight);
 
   createGradientBackground(scene);
+  createRetroSun(scene);
 
   // Ground — extend along the diagonal the camera sees
   const groundGeo = new THREE.PlaneGeometry(60, 60, 30, 30);

@@ -61,6 +61,7 @@ globalThis.window = {
       add(c) { this.children.push(c); }
     },
     BoxGeometry: class { constructor() {} },
+    CircleGeometry: class { constructor() {} },
     CylinderGeometry: class { constructor() {} },
     SphereGeometry: class { constructor() {} },
     PlaneGeometry: class { constructor() {} },
@@ -280,6 +281,16 @@ describe('createEnvironment', () => {
     assert.ok(scene.background, 'scene.background should be set');
     const bgPlanes = scene.children.filter(c => c.position && c.position.z <= -30);
     assert.ok(bgPlanes.length >= 1, `expected >= 1 background plane at z <= -30, got ${bgPlanes.length}`);
+  });
+
+  it('adds a retro sun with slice lines near the horizon', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    // Sun circle + 5 slice lines at y>=0 and z<=-27
+    const sunObjects = scene.children.filter(c =>
+      c.position && c.position.y >= 0 && c.position.z <= -27
+    );
+    assert.ok(sunObjects.length >= 6, `expected >= 6 sun objects, got ${sunObjects.length}`);
   });
 });
 
