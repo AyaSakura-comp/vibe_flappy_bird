@@ -61,3 +61,14 @@ node node_modules/@playwright/test/cli.js test
 - Ground/grid at z=-10, sized 60x60
 - Pipes removed at `PIPE_REMOVE_Z=15` (past the camera) so they persist after the bird passes
 - Bird trail spreads in +Z direction (toward camera) to appear behind the bird
+
+## Automated High-Score Recording
+
+A high-score E2E test is available for automated gameplay recording and visual verification.
+
+- **Test File:** `tests/high-score.spec.js`
+- **Controller:** Uses a predictive PD-style controller that calculates the bird's future position in 5 frames (predicting gravity and current velocity) and flaps if it falls below the next gap center.
+- **Run command:** `node node_modules/@playwright/test/cli.js test tests/high-score.spec.js`
+- **Goal:** Navigates >= 10 pipes and automatically captures the video in `test-results/`.
+- **Requirements:** Requires the `window.__FLAPPY_*` test API exposed in `js/game.js`.
+
