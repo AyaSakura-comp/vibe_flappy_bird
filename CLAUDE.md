@@ -16,7 +16,7 @@ js/
   environment.js    — Ground, grid, skyline, lighting → { cyanLight, magentaLight }
   game.js           — Main orchestrator: state, input, game loop, window.__FLAPPY_* test API
 tests/
-  unit.test.js      — 38 unit tests (node:test) covering all modules
+  unit.test.js      — 53 unit tests (node:test) covering all modules
   flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright, flaky)
   collision.spec.js — Collision test: bird dies on cap contact (Playwright)
   golden.spec.js    — Golden test: navigate 4+ pipes, crash, verify SYSTEM FAILURE
@@ -25,7 +25,7 @@ docs/plans/         — Design and implementation plan documents
 golden/
   before-refactor.webm  — Reference video from pre-module extraction
   after-refactor.webm   — Reference video after module extraction
-playwright.config.js    — Playwright config: 720×1280 viewport, video on, port 3456
+playwright.config.js    — Playwright config: 720×1280 viewport, video on, port 3457
 package.json
 ```
 
@@ -52,7 +52,7 @@ node node_modules/@playwright/test/cli.js test
 - Tests require Playwright browsers installed (`npx playwright install`)
 - Videos are recorded automatically by Playwright config
 - `record-gameplay.spec.js` is the most reliable E2E test (score >= 2); use it for video verification
-- Unit tests: `npm run test:unit` (38 tests, all modules)
+- Unit tests: `npm run test:unit` (53 tests, all modules)
 
 ## Camera & Environment
 
@@ -67,8 +67,13 @@ node node_modules/@playwright/test/cli.js test
 A high-score E2E test is available for automated gameplay recording and visual verification.
 
 - **Test File:** `tests/high-score.spec.js`
-- **Controller:** Uses a predictive PD-style controller that calculates the bird's future position in 5 frames (predicting gravity and current velocity) and flaps if it falls below the next gap center.
+- **Controller:** Zero-latency in-browser pilot injected via `addInitScript`. Uses an absolute-ceiling strategy:
+  - Aims for the bottom quarter of the gap (`gapBot + 1.5`) to pre-position for downward transitions
+  - Only flaps when falling (`vel > 0.01`) to prevent double-flaps
+  - Enforces an absolute ceiling of 1.25 — the peak after any flap (`birdY + 2.8`) must stay below this to survive worst-case gap transitions (+2 → -2 in `PIPE_Y_PATTERN`)
 - **Run command:** `node node_modules/@playwright/test/cli.js test tests/high-score.spec.js`
-- **Goal:** Navigates >= 10 pipes and automatically captures the video in `test-results/`.
+- **Goal:** Navigates >= 5 pipes (typically scores 6–13+). Video captured in `test-results/`.
+- **Golden recording:** `golden/high-score-5plus.webm` (score 13)
+- **Port:** Uses port 3457 (configured in `playwright.config.js` webServer)
 - **Requirements:** Requires the `window.__FLAPPY_*` test API exposed in `js/game.js`.
 
