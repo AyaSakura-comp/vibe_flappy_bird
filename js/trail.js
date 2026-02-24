@@ -4,7 +4,7 @@ const THREE = window.THREE;
 // from the front camera as a wavy neon streak.
 const TRAIL_LENGTH = 16;
 const SAMPLE_EVERY = 2;   // sample every 2 frames
-const X_WOBBLE     = 0.12; // max X deviation per point
+const X_WOBBLE     = 0.04; // max X deviation per point
 
 export function createTrail(scene) {
   const geo = new THREE.BufferGeometry();
@@ -74,7 +74,7 @@ function _rebuildBuffer(points) {
     const wobble = Math.sin(i * 1.2) * X_WOBBLE * t;
     pos[i * 3]     = history[i].x + wobble;
     pos[i * 3 + 1] = history[i].y;
-    pos[i * 3 + 2] = history[i].z - i * 0.15;
+    pos[i * 3 + 2] = history[i].z;
     col[i * 3]     = 0;
     col[i * 3 + 1] = 1 - t * 0.9;
     col[i * 3 + 2] = 1 - t * 0.9;

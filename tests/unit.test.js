@@ -379,6 +379,22 @@ describe('trail', () => {
     assert.ok(posArr[2] <= -0.3);   // z is at or behind bird
   });
 
+  it('trail points z values match stored history (no artificial offset)', () => {
+    const scene = mockScene();
+    const trail = trailMod.createTrail(scene);
+    // Feed several positions to build history
+    for (let i = 0; i < 10; i++) {
+      trailMod.updateTrail(trail, 0, i * 0.5, -5);
+    }
+    const posArr = trail.geometry.attributes.position.array;
+    const history = trail.userData.history;
+    // Each point's z should equal the stored history z (no artificial - i * 0.15 offset)
+    for (let i = 0; i < history.length; i++) {
+      assert.equal(posArr[i * 3 + 2], history[i].z,
+        `point ${i} z should match history z without offset`);
+    }
+  });
+
   it('resetTrail resets bird position to origin', () => {
     const scene = mockScene();
     const trail = trailMod.createTrail(scene);
