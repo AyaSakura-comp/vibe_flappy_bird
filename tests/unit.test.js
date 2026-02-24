@@ -21,7 +21,7 @@ function mockMesh(geo, mat) {
     material: mat,
     position: mockVec3(),
     rotation: mockVec3(),
-    scale: { setScalar(s) { this.x = s; this.y = s; this.z = s; }, x: 1, y: 1, z: 1 },
+    scale: { setScalar(s) { this.x = s; this.y = s; this.z = s; }, set(x,y,z) { this.x=x; this.y=y; this.z=z; }, x: 1, y: 1, z: 1 },
     visible: true,
     lookAt() {},
   };
@@ -81,7 +81,13 @@ globalThis.window = {
     MeshPhongMaterial: class {
       constructor(opts) { Object.assign(this, mockMaterial(opts)); }
     },
+    MeshLambertMaterial: class {
+      constructor(opts) { Object.assign(this, mockMaterial(opts)); }
+    },
     AmbientLight: class {
+      constructor() { this.position = mockVec3(); }
+    },
+    DirectionalLight: class {
       constructor() { this.position = mockVec3(); }
     },
     PointLight: class {
@@ -280,22 +286,23 @@ describe('createEnvironment', () => {
     assert.equal(typeof result.envState, 'object');
   });
 
-  it('sets scene.background and adds a background plane at z <= -30', () => {
+  it('sets scene.background and adds a background plane along the diagonal', () => {
     const scene = mockScene();
     createEnvironment(scene);
     assert.ok(scene.background, 'scene.background should be set');
-    const bgPlanes = scene.children.filter(c => c.position && c.position.z <= -30);
-    assert.ok(bgPlanes.length >= 1, `expected >= 1 background plane at z <= -30, got ${bgPlanes.length}`);
+    const bgPlanes = scene.children.filter(c => c.position && c.position.x <= -20 && c.position.z <= -20);
+    assert.ok(bgPlanes.length >= 1, `expected >= 1 background plane along diagonal, got ${bgPlanes.length}`);
   });
 
-  it('has a second row of distant buildings at z=-24 to -28', () => {
+  it('has a second row of distant buildings along the diagonal', () => {
     const scene = mockScene();
     createEnvironment(scene);
+    // Far buildings along diagonal: x <= -8 and at varying z
     const distantBuildings = scene.children.filter(c =>
-      c.position && c.position.z <= -24 && c.position.z >= -28 &&
+      c.position && c.position.x <= -8 && c.position.z <= -8 &&
       c.position.y > -6
     );
-    assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings, got ${distantBuildings.length}`);
+    assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings along diagonal, got ${distantBuildings.length}`);
   });
 
   it('envState.parallaxObjects has 3 wireframe objects', () => {
@@ -317,10 +324,11 @@ describe('createEnvironment', () => {
     const scene = mockScene();
     createEnvironment(scene);
     // Sun group behind buildings (z <= -17), group contains disc + slices
+    // Sun group along diagonal (x <= -18, z <= -18) with disc + slices
     const sunGroups = scene.children.filter(c =>
-      c.position && c.position.z <= -21 && c.children && c.children.length >= 5
+      c.position && c.position.x <= -8 && c.position.z <= -8 && c.children && c.children.length >= 6
     );
-    assert.ok(sunGroups.length >= 1, `expected >= 1 sun group at z<=-17, got ${sunGroups.length}`);
+    assert.ok(sunGroups.length >= 1, `expected >= 1 sun group along diagonal, got ${sunGroups.length}`);
   });
 });
 

@@ -4,41 +4,37 @@ function createGradientBackground(scene) {
   // Solid purple sky background — clearly visible from the angled camera
   scene.background = new THREE.Color(0x1a0044);
 
-  // Brighter purple horizon glow plane — solid color, no transparency issues
+  // Background plane — far along diagonal, behind sun and buildings
   const geo = new THREE.PlaneGeometry(200, 120);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x2d0066 });
+  const mat = new THREE.MeshBasicMaterial({ color: 0x2d0066, side: THREE.DoubleSide });
   const plane = new THREE.Mesh(geo, mat);
-  plane.position.set(0, 8, -31);
+  plane.position.set(-32, 8, -32);
+  plane.lookAt(15, 8, 15);
   scene.add(plane);
 }
 
 function createRetroSun(scene) {
-  // Sun disc — placed along the camera view ray, rotated to face the camera
-  // Camera is at (15,5,15) looking at (0,0,0). View ray center at z=-20 is ~(-20,-6.7,-20).
-  // Use a Group so slices stay relative to the sun disc in local space.
-  // Push sun further back so buildings don't bisect it
-  const SUN_X = -22, SUN_Y = -3, SUN_Z = -22;
-
+  // Sun placed along the camera view diagonal at high elevation, facing camera.
+  // Camera at (15,5,15) → view direction (-0.688,-0.229,-0.688).
+  // Sun at roughly d=35 behind origin along that diagonal, elevated to sky.
+  // Place sun at the view center along the diagonal at depth ~35,
+  // view center at d=35: (-9.1, -3.0, -9.1). Raise y slightly above ground.
   const group = new THREE.Group();
-  group.position.set(SUN_X, SUN_Y, SUN_Z);
+  group.position.set(-9, 2, -9);
   group.lookAt(15, 5, 15);
 
-  // Sun disc in local XY plane (facing +Z before rotation)
-  const sunGeo = new THREE.CircleGeometry(8, 32);
+  const sunGeo = new THREE.CircleGeometry(6, 32);
   const sunMat = new THREE.MeshBasicMaterial({ color: 0xff4400, side: THREE.DoubleSide });
-  const sun = new THREE.Mesh(sunGeo, sunMat);
-  group.add(sun);
+  group.add(new THREE.Mesh(sunGeo, sunMat));
 
-  // Horizontal slice lines in local space — only 4 thin lines in the lower half
   const sliceMat = new THREE.MeshBasicMaterial({ color: 0x1a0044, side: THREE.DoubleSide });
-  for (let i = 0; i < 4; i++) {
-    const thickness = 0.25 + i * 0.15;
-    const sliceGeo = new THREE.BoxGeometry(18, thickness, 0.2);
+  for (let i = 0; i < 5; i++) {
+    const thickness = 0.25 + i * 0.18;
+    const sliceGeo = new THREE.BoxGeometry(16, thickness, 0.2);
     const slice = new THREE.Mesh(sliceGeo, sliceMat);
-    slice.position.set(0, -1.5 - i * 1.8, 0.05);
+    slice.position.set(0, -1.2 - i * 1.6, 0.05);
     group.add(slice);
   }
-
   scene.add(group);
 }
 
@@ -51,10 +47,11 @@ function createDigitalRain(scene, envState) {
     const geo = new THREE.BoxGeometry(0.12, 0.6 + Math.random() * 0.8, 0.12);
     const mat = Math.random() > 0.3 ? rainMat1 : rainMat2;
     const mesh = new THREE.Mesh(geo, mat);
+    // Rain covers the diagonal backdrop region
     mesh.position.set(
-      (Math.random() - 0.5) * 24,
+      -28 + Math.random() * 36,  // x: -28 to +8
       Math.random() * 20 + 5,
-      -5 - Math.random() * 10
+      -28 + Math.random() * 36   // z: -28 to +8
     );
     const speed = 0.05 + Math.random() * 0.08;
     scene.add(mesh);
@@ -96,6 +93,11 @@ export function createEnvironment(scene) {
   magentaLight.position.set(3, -2, 4);
   scene.add(magentaLight);
 
+  // Directional light from camera side to illuminate building faces
+  const dirLight = new THREE.DirectionalLight(0x220044, 0.8);
+  dirLight.position.set(15, 5, 15);
+  scene.add(dirLight);
+
   createGradientBackground(scene);
   createRetroSun(scene);
 
@@ -112,32 +114,34 @@ export function createEnvironment(scene) {
   gridHelper.position.set(0, -6.19, -10);
   scene.add(gridHelper);
 
-  // City skyline — thick buildings arranged behind the play area
-  // Camera at (15,5,15) looks toward origin, so buildings at negative z are "behind" the action
-  const buildingMat = new THREE.MeshBasicMaterial({ color: 0x080018 });
+  // City skyline — buildings arranged along the camera view diagonal.
+  // Camera at (15,5,15) looks toward (-X,-Z). "Behind" origin = toward (-X,-Z).
+  // Right vector in XZ: (0.707, 0, -0.707). Buildings spread along this.
+  // Near row (d=20-24 from origin), far row (d=26-30).
+  const buildingMat = new THREE.MeshLambertMaterial({ color: 0x180030 });
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
 
+  // Near buildings: along diagonal, spread left/right with camera-right vector
   const buildingDefs = [
-    { x: -12, w: 3.0, d: 3.0, h: 12, z: -18 },
-    { x:  -9, w: 2.0, d: 2.5, h:  8, z: -20 },
-    { x:  -6, w: 2.5, d: 3.0, h: 16, z: -17 },
-    { x:  -3, w: 1.5, d: 2.0, h:  7, z: -22 },
-    { x:   0, w: 2.0, d: 2.5, h: 10, z: -19 },
-    { x:   3, w: 2.5, d: 3.0, h: 14, z: -18 },
-    { x:   6, w: 1.8, d: 2.5, h:  9, z: -21 },
-    { x:   9, w: 3.0, d: 3.5, h: 18, z: -16 },
-    { x:  12, w: 2.0, d: 2.0, h:  7, z: -20 },
-    { x:  15, w: 2.5, d: 3.0, h: 11, z: -18 },
+    { x: -25.0, w: 3.0, d: 3.0, h:  8, z:  -5.2 },
+    { x: -24.3, w: 2.5, d: 2.5, h: 14, z: -10.1 },
+    { x: -23.5, w: 3.5, d: 3.0, h: 11, z: -15.0 },
+    { x: -22.1, w: 2.0, d: 2.5, h: 16, z: -19.2 },
+    { x: -19.2, w: 2.0, d: 2.5, h: 16, z: -22.1 },
+    { x: -15.0, w: 3.0, d: 3.0, h: 12, z: -23.5 },
+    { x: -10.1, w: 2.5, d: 2.5, h:  9, z: -24.3 },
+    { x:  -5.2, w: 3.5, d: 3.0, h:  7, z: -25.0 },
   ];
 
   buildingDefs.forEach(({ x, w, d, h, z }) => {
     const geo  = new THREE.BoxGeometry(w, h, d);
     const mesh = new THREE.Mesh(geo, buildingMat);
     mesh.position.set(x, h / 2 - 6.2, z);
+    mesh.rotation.y = Math.PI / 4; // 45° so camera sees corner, not flat face
     scene.add(mesh);
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       const wGeo = new THREE.BoxGeometry(0.18, 0.18, 0.05);
       const mat  = Math.random() > 0.5 ? windowMat : winMat2;
       const win  = new THREE.Mesh(wGeo, mat);
@@ -150,24 +154,25 @@ export function createEnvironment(scene) {
     }
   });
 
-  // Distant skyline — taller, darker silhouettes for depth
-  const distantBuildingMat = new THREE.MeshBasicMaterial({ color: 0x040010 });
+  // Far buildings — darker, taller, further along diagonal
+  const distantBuildingMat = new THREE.MeshLambertMaterial({ color: 0x0c0020 });
   const distantDefs = [
-    { x: -14, w: 4.0, d: 2.0, h: 20, z: -26 },
-    { x:  -8, w: 3.0, d: 2.5, h: 14, z: -25 },
-    { x:  -3, w: 3.5, d: 2.0, h: 22, z: -27 },
-    { x:   2, w: 2.5, d: 2.5, h: 12, z: -26 },
-    { x:   7, w: 4.0, d: 2.0, h: 24, z: -25 },
-    { x:  13, w: 3.0, d: 2.5, h: 16, z: -27 },
+    { x: -28.0, w: 4.0, d: 2.0, h: 20, z:  -8.0 },
+    { x: -26.5, w: 3.0, d: 2.0, h: 18, z: -13.5 },
+    { x: -24.8, w: 3.5, d: 2.0, h: 22, z: -18.5 },
+    { x: -18.5, w: 3.5, d: 2.0, h: 22, z: -24.8 },
+    { x: -13.5, w: 3.0, d: 2.0, h: 18, z: -26.5 },
+    { x:  -8.0, w: 4.0, d: 2.0, h: 20, z: -28.0 },
   ];
 
   distantDefs.forEach(({ x, w, d, h, z }) => {
     const geo  = new THREE.BoxGeometry(w, h, d);
     const mesh = new THREE.Mesh(geo, distantBuildingMat);
     mesh.position.set(x, h / 2 - 6.2, z);
+    mesh.rotation.y = Math.PI / 4;
     scene.add(mesh);
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
       const win  = new THREE.Mesh(wGeo, windowMat);
       win.position.set(
@@ -191,7 +196,8 @@ export function updateEnvironment(envState, dt) {
       drop.mesh.position.y -= drop.speed * dt;
       if (drop.mesh.position.y < -7) {
         drop.mesh.position.y = 15 + Math.random() * 10;
-        drop.mesh.position.x = (Math.random() - 0.5) * 30;
+        drop.mesh.position.x = -28 + Math.random() * 36;
+        drop.mesh.position.z = -28 + Math.random() * 36;
       }
     }
   }
