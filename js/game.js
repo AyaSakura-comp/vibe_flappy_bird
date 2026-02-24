@@ -1,6 +1,6 @@
 import { GRAVITY, FLAP, PIPE_SPEED, SPAWN_MS, PIPE_REMOVE_Z } from './constants.js';
 import { createBird } from './bird.js';
-import { createEnvironment } from './environment.js';
+import { createEnvironment, updateEnvironment } from './environment.js';
 import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.js';
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
 import { checkCollision } from './collision.js';
@@ -22,7 +22,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 // ── Environment ──────────────────────────────────────────────────────────
-const { cyanLight, magentaLight } = createEnvironment(scene);
+const { cyanLight, magentaLight, envState } = createEnvironment(scene);
 
 // ── Bird ─────────────────────────────────────────────────────────────────
 const { birdGroup, eng } = createBird(scene);
@@ -156,6 +156,7 @@ function loop(now) {
   }
 
   updateExplosion(scene, dt);
+  updateEnvironment(envState, dt);
 
   cyanLight.intensity    = 1.5 + Math.sin(now * 0.003) * 0.3;
   magentaLight.intensity = 1.2 + Math.cos(now * 0.004) * 0.3;

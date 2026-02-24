@@ -63,5 +63,10 @@ export function createEnvironment(scene) {
     }
   });
 
-  return { cyanLight, magentaLight };
+  const envState = {};
+  return { cyanLight, magentaLight, envState };
+}
+
+export function updateEnvironment(envState, dt) {
+  // animated effects will be added in subsequent tasks
 }

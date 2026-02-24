@@ -125,7 +125,7 @@ const {
   SPAWN_MS, PIPE_Y_PATTERN, EXPLOSION_COLORS, PIPE_REMOVE_Z,
 } = await import('../js/constants.js');
 const { createBird } = await import('../js/bird.js');
-const { createEnvironment } = await import('../js/environment.js');
+const { createEnvironment, updateEnvironment } = await import('../js/environment.js');
 const { spawnExplosion, updateExplosion, clearParticles } = await import('../js/explosion.js');
 const pipesMod = await import('../js/pipes.js');
 const trailMod = await import('../js/trail.js');
@@ -250,6 +250,23 @@ describe('createEnvironment', () => {
     grounds.forEach(g => {
       assert.ok(g.position.z > -30, `ground at z=${g.position.z} should be > -30`);
     });
+  });
+
+  it('returns envState object', () => {
+    const scene = mockScene();
+    const result = createEnvironment(scene);
+    assert.ok(result.envState, 'should return envState');
+    assert.equal(typeof result.envState, 'object');
+  });
+});
+
+// ── updateEnvironment ────────────────────────────────────────────────────
+describe('updateEnvironment', () => {
+  it('is a function that accepts envState and dt', () => {
+    assert.equal(typeof updateEnvironment, 'function');
+  });
+  it('does not throw with empty envState', () => {
+    assert.doesNotThrow(() => updateEnvironment({}, 1));
   });
 });
 
