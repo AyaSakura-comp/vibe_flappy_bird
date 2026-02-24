@@ -11,8 +11,8 @@ module.exports = defineConfig({
     viewport: { width: 720, height: 1280 },
   },
   webServer: {
-    command: 'node node_modules/http-server/bin/http-server . -p 3456 --cors',
-    url: 'http://localhost:3456',
+    command: 'node node_modules/http-server/bin/http-server . -p 3457 --cors',
+    url: 'http://localhost:3457',
     reuseExistingServer: true,
   },
 });
