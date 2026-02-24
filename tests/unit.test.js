@@ -99,6 +99,13 @@ globalThis.window = {
     GridHelper: class {
       constructor() { this.position = mockVec3(); }
     },
+    Fog: class {
+      constructor(color, near, far) {
+        this.color = { getHex: () => color };
+        this.near = near;
+        this.far = far;
+      }
+    },
     Color: class { constructor() {} },
     CanvasTexture: class {
       constructor(canvas) { this.image = canvas; this.needsUpdate = false; }
@@ -286,6 +293,20 @@ describe('createEnvironment', () => {
     assert.equal(typeof result.envState, 'object');
   });
 
+  it('adds fog to the scene matching the sky color exactly (0x1a0044)', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    assert.ok(scene.fog, 'scene.fog should be defined');
+    assert.equal(scene.fog.color.getHex(), 0x1a0044);
+  });
+
+  it('envState includes cityObjects and gridHelper for parallax tracking', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    assert.ok(Array.isArray(envState.cityObjects), 'cityObjects should be an array');
+    assert.ok(envState.gridHelper, 'gridHelper should be tracked');
+  });
+
   it('sets scene.background and adds a background plane along the diagonal', () => {
     const scene = mockScene();
     createEnvironment(scene);
@@ -340,6 +361,29 @@ describe('updateEnvironment', () => {
   it('does not throw with empty envState', () => {
     assert.doesNotThrow(() => updateEnvironment({}, 1));
   });
+
+  describe('parallax', () => {
+    it('moves city objects along the diagonal when isMoving is true', () => {
+      const scene = mockScene();
+      const { envState } = createEnvironment(scene);
+      const obj = envState.cityObjects[0];
+      const startZ = obj.position.z;
+      const startX = obj.position.x;
+      updateEnvironment(envState, 1, true);
+      assert.ok(obj.position.z > startZ, 'building should move toward camera (+z)');
+      assert.ok(obj.position.x > startX, 'building should move along diagonal (+x)');
+    });
+
+    it('wraps grid position for seamless infinite scroll', () => {
+      const scene = mockScene();
+      const { envState } = createEnvironment(scene);
+      // Threshold is -8 (-10 initial + 2 units move)
+      envState.gridHelper.position.z = -7.9;
+      updateEnvironment(envState, 1, true);
+      assert.ok(envState.gridHelper.position.z < -9, 'grid should snap back by 2 units');
+    });
+  });
+
   it('updateEnvironment rotates parallax wireframes', () => {
     const scene = mockScene();
     const { envState } = createEnvironment(scene);

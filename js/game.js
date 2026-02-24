@@ -155,7 +155,7 @@ function loop(now) {
   }
 
   updateExplosion(scene, dt);
-  updateEnvironment(envState, dt);
+  updateEnvironment(envState, dt, started && !gameOver);
 
   cyanLight.intensity    = 1.5 + Math.sin(now * 0.003) * 0.3;
   magentaLight.intensity = 1.2 + Math.cos(now * 0.004) * 0.3;

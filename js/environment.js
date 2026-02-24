@@ -86,6 +86,9 @@ export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
 
+  // Add linear fog matching sky color exactly
+  scene.fog = new THREE.Fog(0x1a0044, 20, 80);
+
   const cyanLight = new THREE.PointLight(0x00ffff, 1.5, 30);
   cyanLight.position.set(-3, 2, 6);
   scene.add(cyanLight);
@@ -119,6 +122,7 @@ export function createEnvironment(scene) {
   // Camera at (15,5,15) looks toward (-X,-Z). "Behind" origin = toward (-X,-Z).
   // Right vector in XZ: (0.707, 0, -0.707). Buildings spread along this.
   // Near row (d=20-24 from origin), far row (d=26-30).
+  const cityObjects = [];
   const buildingMat = new THREE.MeshLambertMaterial({ color: 0x180030 });
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
@@ -129,14 +133,14 @@ export function createEnvironment(scene) {
   // Near row (depth 32-40), far row (depth 40-50), all visible from camera.
   const buildingDefs = [
     // x,   w,   d,  h,    z      (x≈z ± small offset)
-    { x:  -8, w: 2.0, d: 2.0, h: 10, z:  -8 }, // center, nearest
-    { x:  -9, w: 1.8, d: 1.8, h: 14, z: -12 }, // slight right
-    { x: -12, w: 2.0, d: 2.0, h:  9, z:  -9 }, // slight left
-    { x: -13, w: 1.5, d: 1.5, h: 18, z: -13 }, // center, mid depth
-    { x: -14, w: 1.8, d: 1.8, h: 12, z: -17 }, // slight right
-    { x: -17, w: 2.0, d: 2.0, h:  8, z: -14 }, // slight left
-    { x: -18, w: 1.5, d: 1.5, h: 20, z: -18 }, // center, deeper
-    { x: -20, w: 1.8, d: 1.8, h: 15, z: -20 }, // center, deepest near
+    { x: -18, w: 2.0, d: 2.0, h: 10, z:  -8 }, // center, nearest
+    { x: -19, w: 1.8, d: 1.8, h: 14, z: -12 }, // slight right
+    { x: -22, w: 2.0, d: 2.0, h:  9, z:  -9 }, // slight left
+    { x: -23, w: 1.5, d: 1.5, h: 18, z: -13 }, // center, mid depth
+    { x: -24, w: 1.8, d: 1.8, h: 12, z: -17 }, // slight right
+    { x: -27, w: 2.0, d: 2.0, h:  8, z: -14 }, // slight left
+    { x: -28, w: 1.5, d: 1.5, h: 20, z: -18 }, // center, deeper
+    { x: -30, w: 1.8, d: 1.8, h: 15, z: -20 }, // center, deepest near
   ];
 
   buildingDefs.forEach(({ x, w, d, h, z }) => {
@@ -145,6 +149,7 @@ export function createEnvironment(scene) {
     mesh.position.set(x, h / 2 - 6.2, z);
     mesh.rotation.y = Math.PI / 4;
     scene.add(mesh);
+    cityObjects.push(mesh);
 
     for (let i = 0; i < 4; i++) {
       const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
@@ -156,18 +161,19 @@ export function createEnvironment(scene) {
         z + d / 2 + 0.05
       );
       scene.add(win);
+      cityObjects.push(win);
     }
   });
 
   // Far row — darker silhouettes, all along x≈z diagonal
   const distantBuildingMat = new THREE.MeshLambertMaterial({ color: 0x0c0020 });
   const distantDefs = [
-    { x: -22, w: 2.5, d: 2.0, h: 22, z: -22 },
-    { x: -23, w: 2.0, d: 1.8, h: 16, z: -26 }, // slight right
-    { x: -26, w: 2.0, d: 1.8, h: 14, z: -23 }, // slight left
-    { x: -27, w: 2.5, d: 2.0, h: 24, z: -27 },
-    { x: -28, w: 2.0, d: 1.8, h: 18, z: -24 }, // slight left
-    { x: -24, w: 2.0, d: 1.8, h: 20, z: -28 }, // slight right
+    { x: -32, w: 2.5, d: 2.0, h: 22, z: -22 },
+    { x: -33, w: 2.0, d: 1.8, h: 16, z: -26 }, // slight right
+    { x: -36, w: 2.0, d: 1.8, h: 14, z: -23 }, // slight left
+    { x: -37, w: 2.5, d: 2.0, h: 24, z: -27 },
+    { x: -38, w: 2.0, d: 1.8, h: 18, z: -24 }, // slight left
+    { x: -34, w: 2.0, d: 1.8, h: 20, z: -28 }, // slight right
   ];
 
   distantDefs.forEach(({ x, w, d, h, z }) => {
@@ -176,6 +182,7 @@ export function createEnvironment(scene) {
     mesh.position.set(x, h / 2 - 6.2, z);
     mesh.rotation.y = Math.PI / 4;
     scene.add(mesh);
+    cityObjects.push(mesh);
 
     for (let i = 0; i < 2; i++) {
       const wGeo = new THREE.BoxGeometry(0.12, 0.12, 0.05);
@@ -186,16 +193,48 @@ export function createEnvironment(scene) {
         z + d / 2 + 0.05
       );
       scene.add(win);
+      cityObjects.push(win);
     }
   });
 
-  const envState = {};
+  const envState = { cityObjects, gridHelper };
   createDigitalRain(scene, envState);
   createParallaxWireframes(scene, envState);
   return { cyanLight, magentaLight, envState };
 }
 
-export function updateEnvironment(envState, dt) {
+export function updateEnvironment(envState, dt, isMoving = false) {
+  if (isMoving) {
+    const parallaxSpeed = 0.025; // 25% of PIPE_SPEED
+
+    // 1. Move & Wrap Buildings
+    if (envState.cityObjects) {
+      for (const obj of envState.cityObjects) {
+        obj.position.x += parallaxSpeed * dt;
+        obj.position.z += parallaxSpeed * dt;
+        // Wrap buildings when they go past camera view (Z=15)
+        // They are spread over ~60 units, so wrap back by 60 units
+        if (obj.position.z > 15) {
+          obj.position.x -= 60;
+          obj.position.z -= 60;
+        }
+      }
+    }
+
+    // 2. Infinite Grid Scroll
+    if (envState.gridHelper) {
+      envState.gridHelper.position.x += parallaxSpeed * dt;
+      envState.gridHelper.position.z += parallaxSpeed * dt;
+      // Grid is 60x60 with divisions every 2 units. 
+      // Snapping back by 2 units keeps it seamless.
+      // Threshold is -8 (-10 initial + 2 units)
+      if (envState.gridHelper.position.z > -8) {
+        envState.gridHelper.position.x -= 2;
+        envState.gridHelper.position.z -= 2;
+      }
+    }
+  }
+
   if (envState.rainDrops) {
     for (const drop of envState.rainDrops) {
       drop.mesh.position.y -= drop.speed * dt;
