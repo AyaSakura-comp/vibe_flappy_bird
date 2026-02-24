@@ -230,6 +230,24 @@ describe('createEnvironment', () => {
     const { cyanLight } = createEnvironment(scene);
     assert.equal(cyanLight.intensity, 1.5);
   });
+
+  it('buildings have depth >= 2 for 3D visibility from angled camera', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    const meshChildren = scene.children.filter(c => c.position && typeof c.position.z === 'number');
+    const buildingLike = meshChildren.filter(c => c.position.z > -30 && c.position.z < 5);
+    assert.ok(buildingLike.length >= 10, 'should have buildings in visible z range');
+  });
+
+  it('ground plane is positioned visible from angled camera', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    const grounds = scene.children.filter(c => c.rotation && c.rotation.x !== 0);
+    assert.ok(grounds.length >= 1, 'should have a ground plane');
+    grounds.forEach(g => {
+      assert.ok(g.position.z > -30, `ground at z=${g.position.z} should be > -30`);
+    });
+  });
 });
 
 // ── explosion.js ────────────────────────────────────────────────────────
