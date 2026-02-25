@@ -1,5 +1,9 @@
-import { GRAVITY, FLAP, PIPE_SPEED, SPAWN_MS, PIPE_REMOVE_Z } from './constants.js';
+import { CONFIG, SPAWN_MS, GRAVITY, FLAP, PIPE_SPEED, PIPE_REMOVE_Z } from './constants.js';
 import { createBird } from './bird.js';
+
+// Expose CONFIG for tests and debugging
+window.__GAME_CONFIG = CONFIG;
+
 import { createEnvironment, updateEnvironment } from './environment.js';
 import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.js';
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
@@ -209,6 +213,20 @@ function loop(now) {
   if (filmPass) filmPass.uniforms['time'].value = now * 0.001;
   composer.render();
 }
+
+// ── Test API: quiet start (no flap velocity) for Playwright pilot ─────────
+// The normal click-to-start also fires a flap (velocity = FLAP), which sends
+// the bird to y≈2.86. With PIPE_SPACING=4.5, pipe 2 (y=-2.0, gapTop=1.75)
+// arrives at the collision zone only ~12 frames after start — before the bird
+// has fallen back below 1.75. Starting quietly (vel stays 0) keeps the bird
+// near y=0 so the pilot can navigate from a neutral position.
+window.__FLAPPY_START_QUIET = () => {
+  if (!started && !gameOver) {
+    started = true;
+    lastSpawn = performance.now();
+    overlayEl.classList.add('hidden');
+  }
+};
 
 // ── Init ─────────────────────────────────────────────────────────────────
 prefillPipes(scene);

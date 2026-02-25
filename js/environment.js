@@ -165,11 +165,12 @@ export function createEnvironment(scene) {
       void main() {
         vec2 uv = vUv * 30.0;
         uv.y += uOffset;
-        // fwidth not perfectly supported in all WebGL1, fallback to a small constant for anti-aliasing if needed
-        // Since we're in WebGL2 or high-end WebGL1 via Playwright, fwidth is fine
-        vec2 grid = abs(fract(uv - 0.5) - 0.5) / fwidth(uv);
-        float line = min(grid.x, grid.y);
-        float mask = 1.0 - min(line, 1.0);
+        
+        // Use fixed thickness in UV space for resolution-independent lines
+        float thickness = 0.04;
+        vec2 grid = smoothstep(thickness, 0.0, abs(fract(uv - 0.5) - 0.5));
+        float mask = max(grid.x, grid.y);
+        
         vec2 cell = floor(uv);
         float checker = mod(cell.x + cell.y, 2.0);
         vec3 lineColor = mix(uColor1, uColor2, checker * 0.3);

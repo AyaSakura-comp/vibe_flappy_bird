@@ -1,4 +1,7 @@
 node_modules/
 playwright-browsers/
 test-results/
-*.webm
+*.png
+test-resolutions.js
+debug*.webm
+gameplay-analysis.webm

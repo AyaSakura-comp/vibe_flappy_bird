@@ -59,9 +59,7 @@ export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z) {
 }
 
 export function prefillPipes(scene) {
-  const startZ = 5; // Near camera
-  const endZ   = PIPE_SPAWN_Z + PIPE_SPACING; // Just before spawn point
-  for (let z = startZ; z >= endZ; z -= PIPE_SPACING) {
+  for (let z = 5; z >= PIPE_SPAWN_Z; z -= PIPE_SPACING) {
     spawnPipe(scene, z);
   }
 }

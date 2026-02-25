@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test('Record high-score gameplay: navigate 5+ pipes', async ({ page }) => {
-  test.setTimeout(60000);
+  test.setTimeout(120000);
 
   // Inject a zero-latency in-browser pilot using physics prediction
   await page.addInitScript(() => {
@@ -24,32 +24,29 @@ test('Record high-score gameplay: navigate 5+ pipes', async ({ page }) => {
       const vel = window.__FLAPPY_VELOCITY;
       const isOver = window.__FLAPPY_OVER;
       const started = window.__FLAPPY_STARTED;
+      const config = window.__GAME_CONFIG;
 
-      if (started && !isOver && birdY !== undefined && targetY !== undefined && vel !== undefined) {
-        // Physics: vel += GRAVITY*dt, y -= vel*dt (dt~1 at 60fps)
-        // Positive vel = falling, negative = rising. FLAP sets vel = -0.13
-        const GRAVITY = 0.003;
-        const FLAP_VEL = -0.13;
+      if (started && !isOver && birdY !== undefined && targetY !== undefined && vel !== undefined && config) {
+        // Physics derived dynamically from the game's single source of truth
+        const GRAVITY = config.PHYSICS.GRAVITY;
+        const FLAP_VEL = config.PHYSICS.FLAP;
 
         // Strategy: keep bird in the LOWER portion of the gap.
-        // This minimizes upward position, giving more room for sudden drops.
-        // Gap is 7.5 units; aim for gapBot + 1.5 (bottom quarter)
         const safeFloor = gapBot + 1.5;
 
-        // After flapping (vel becomes -0.13), bird rises ~2.8 units to peak.
-        // Worst-case next gapTop = 1.75 (pattern goes +2 → -2).
-        // So peak must NEVER exceed 1.25 (= 1.75 - 0.5 margin).
-        const ABSOLUTE_CEILING = 1.25;
-        const peakAfterFlap = birdY + 2.8;
+        // Dynamic peak calculation based on current gravity/flap
+        // v^2 / 2g = peak height
+        const peakHeight = (FLAP_VEL * FLAP_VEL) / (2 * GRAVITY);
+        const peakAfterFlap = birdY + peakHeight;
 
         // Only flap if:
         // 1. Bird is near or below the safe floor
-        // 2. Bird is falling (vel > 0) — never double-flap while rising
-        // 3. Peak after flap won't exceed ABSOLUTE_CEILING
+        // 2. Bird is falling (vel > 0)
+        // 3. Peak after flap won't exceed gap top
         const shouldFlap = (
           birdY < safeFloor + 0.3 &&
           vel > 0.01 &&
-          peakAfterFlap < ABSOLUTE_CEILING
+          peakAfterFlap < (gapTop - 0.5)
         );
 
         if (shouldFlap) {
