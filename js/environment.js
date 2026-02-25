@@ -158,8 +158,12 @@ export function createEnvironment(scene) {
   const cityObjects = [];
   const blinkingWindows = [];
   const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 });
-  const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-  const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+  const windowMats = [
+    new THREE.MeshBasicMaterial({ color: 0x00ffff }), // Cyan
+    new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Magenta
+    new THREE.MeshBasicMaterial({ color: 0xffff00 }), // Yellow
+    new THREE.MeshBasicMaterial({ color: 0x00ff00 }), // Green
+  ];
 
   // Buildings placed along the x≈z diagonal — the camera's view center line.
   // Verified by projection math: screenX = 0.707*(x-z)/depth, so x≈z keeps buildings
@@ -198,7 +202,7 @@ export function createEnvironment(scene) {
       for (let wx = startX; wx <= endX; wx += 0.4) {
         if (Math.random() > 0.4) { // Not all windows have light
           const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
-          const mat = Math.random() > 0.5 ? windowMat : winMat2;
+          const mat = windowMats[Math.floor(Math.random() * windowMats.length)];
           const win = new THREE.Mesh(wGeo, mat);
           
           // Add window as a child of the building group so it inherits rotation
@@ -244,7 +248,8 @@ export function createEnvironment(scene) {
       for (let wx = startX; wx <= endX; wx += 0.4) {
         if (Math.random() > 0.7) { // sparser for distant buildings
           const wGeo = new THREE.BoxGeometry(0.12, 0.12, 0.05);
-          const win  = new THREE.Mesh(wGeo, windowMat);
+          const mat = windowMats[Math.floor(Math.random() * windowMats.length)];
+          const win = new THREE.Mesh(wGeo, mat);
           win.position.set(wx, wy, d / 2 + 0.05);
           group.add(win);
           

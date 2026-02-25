@@ -356,7 +356,7 @@ describe('createEnvironment', () => {
     assert.ok(stdMatsCount >= 5, `expected >= 5 metallic meshes, got ${stdMatsCount}`);
   });
 
-  it('emissive elements use pure cyan 0x00ffff or hot pink 0xff00ff', () => {
+  it('emissive elements use pure cyan, magenta, yellow, or green', () => {
     const scene = mockScene();
     createEnvironment(scene);
     let emissiveColors = [];
@@ -372,7 +372,8 @@ describe('createEnvironment', () => {
         });
       }
     });
-    emissiveColors = emissiveColors.filter(c => c === 0x00ffff || c === 0xff00ff);
+    const allowed = [0x00ffff, 0xff00ff, 0xffff00, 0x00ff00, 0xaa00ff]; // aa00ff is for parallax objects
+    emissiveColors = emissiveColors.filter(c => allowed.includes(c));
     assert.ok(emissiveColors.length >= 4, 'expected neon-colored emissive meshes');
   });
 
