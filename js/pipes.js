@@ -1,4 +1,4 @@
-import { PIPE_GAP, PIPE_Y_PATTERN, PIPE_SPACING } from './constants.js';
+import { PIPE_GAP, PIPE_Y_PATTERN, PIPE_SPACING, PIPE_SPAWN_Z } from './constants.js';
 import * as THREE from 'three';
 
 export const pipes = [];
@@ -30,7 +30,7 @@ export function makePipeSegment(height) {
   return { group, cap, inner };
 }
 
-export function spawnPipe(scene, spawnZ = -18) {
+export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z) {
   const yOffset = PIPE_Y_PATTERN[pipeCount % 5];
   pipeCount++;
   const gapTop  = yOffset + PIPE_GAP / 2;
@@ -59,9 +59,9 @@ export function spawnPipe(scene, spawnZ = -18) {
 }
 
 export function prefillPipes(scene) {
-  const farZ  = -27;
-  const nearZ =  -3;
-  for (let z = nearZ; z >= farZ; z -= PIPE_SPACING) {
+  const startZ = 5; // Near camera
+  const endZ   = PIPE_SPAWN_Z + PIPE_SPACING; // Just before spawn point
+  for (let z = startZ; z >= endZ; z -= PIPE_SPACING) {
     spawnPipe(scene, z);
   }
 }

@@ -62,6 +62,24 @@ function tryRestart() {
   if (gameOver && !overlayEl.classList.contains('hidden')) restartGame();
 }
 
+function updateCameraProjection() {
+  const aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = aspect;
+  
+  // Aspect-Aware FOV:
+  // We want to ensure that portrait view doesn't look "too closed in".
+  // Base FOV is 30 for landscape. In portrait, we increase FOV.
+  const baseFov = 30;
+  if (aspect < 1) {
+    // Increase FOV proportionally to maintain horizontal visibility
+    camera.fov = baseFov / aspect;
+  } else {
+    camera.fov = baseFov;
+  }
+  
+  camera.updateProjectionMatrix();
+}
+
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
     e.preventDefault();
@@ -71,11 +89,13 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('click', () => gameOver ? tryRestart() : handleInput());
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  updateCameraProjection();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Initial call to set correct FOV
+updateCameraProjection();
 
 // ── Game over / restart ──────────────────────────────────────────────────
 function triggerGameOver() {
