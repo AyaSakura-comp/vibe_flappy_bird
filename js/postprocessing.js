@@ -5,6 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
 import { FilmShader } from 'three/examples/jsm/shaders/FilmShader.js';
+import { CONFIG } from './constants.js';
 
 export function createPostProcessing(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
@@ -15,9 +16,9 @@ export function createPostProcessing(renderer, scene, camera) {
   // 2. Bloom — the crucial neon glow
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.8,   // strength — reduced to be less overpowering
-    0.4,   // radius
-    0.3    // threshold — increased slightly to avoid blooming too much background
+    CONFIG.VISUALS.BLOOM.STRENGTH,
+    CONFIG.VISUALS.BLOOM.RADIUS,
+    CONFIG.VISUALS.BLOOM.THRESHOLD
   );
   composer.addPass(bloomPass);
 
@@ -25,9 +26,9 @@ export function createPostProcessing(renderer, scene, camera) {
   const ColorGradeShader = {
     uniforms: {
       tDiffuse: { value: null },
-      shadowCrush: { value: 0.15 },
-      magentaPush: { value: 0.08 },
-      contrast: { value: 1.2 },
+      shadowCrush: { value: CONFIG.VISUALS.POST_PROCESSING.COLOR_GRADE.SHADOW_CRUSH },
+      magentaPush: { value: CONFIG.VISUALS.POST_PROCESSING.COLOR_GRADE.MAGENTA_PUSH },
+      contrast: { value: CONFIG.VISUALS.POST_PROCESSING.COLOR_GRADE.CONTRAST },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -57,15 +58,15 @@ export function createPostProcessing(renderer, scene, camera) {
 
   // 4. Vignette — darken edges
   const vignettePass = new ShaderPass(VignetteShader);
-  vignettePass.uniforms['offset'].value = 1.0;
-  vignettePass.uniforms['darkness'].value = 1.4;
+  vignettePass.uniforms['offset'].value = CONFIG.VISUALS.POST_PROCESSING.VIGNETTE.OFFSET;
+  vignettePass.uniforms['darkness'].value = CONFIG.VISUALS.POST_PROCESSING.VIGNETTE.DARKNESS;
   composer.addPass(vignettePass);
 
   // 5. Film grain + scanlines
   const filmPass = new ShaderPass(FilmShader);
-  filmPass.uniforms['nIntensity'].value = 0.25;  // subtle grain
-  filmPass.uniforms['sIntensity'].value = 0.15;  // visible scanlines
-  filmPass.uniforms['sCount'].value = 400;       // thicker scanlines
+  filmPass.uniforms['nIntensity'].value = CONFIG.VISUALS.POST_PROCESSING.FILM.N_INTENSITY;
+  filmPass.uniforms['sIntensity'].value = CONFIG.VISUALS.POST_PROCESSING.FILM.S_INTENSITY;
+  filmPass.uniforms['sCount'].value = CONFIG.VISUALS.POST_PROCESSING.FILM.S_COUNT;
   filmPass.uniforms['grayscale'].value = 0;
   composer.addPass(filmPass);
 
@@ -73,7 +74,7 @@ export function createPostProcessing(renderer, scene, camera) {
   const ChromaticAberrationShader = {
     uniforms: {
       tDiffuse: { value: null },
-      amount: { value: 0.003 },
+      amount: { value: CONFIG.VISUALS.POST_PROCESSING.CHROMA.AMOUNT },
     },
     vertexShader: `
       varying vec2 vUv;

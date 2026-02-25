@@ -23,9 +23,28 @@ export const CONFIG = {
       EXPLOSION: [0x00ffff, 0xff00ff, 0xffffff, 0xff6600, 0xffff00]
     },
     BLOOM: {
-      STRENGTH: 0.8,
-      RADIUS: 0.4,
+      STRENGTH: 1.4,
+      RADIUS: 1.2,
       THRESHOLD: 0.3
+    },
+    POST_PROCESSING: {
+      COLOR_GRADE: {
+        SHADOW_CRUSH: 0.15,
+        MAGENTA_PUSH: 0.08,
+        CONTRAST: 1.2
+      },
+      VIGNETTE: {
+        OFFSET: 1.0,
+        DARKNESS: 1.4
+      },
+      FILM: {
+        N_INTENSITY: 0.25,
+        S_INTENSITY: 0.15,
+        S_COUNT: 400
+      },
+      CHROMA: {
+        AMOUNT: 0.003
+      }
     }
   }
 };
@@ -43,3 +62,4 @@ export const PIPE_SPAWN_Z = CONFIG.PIPES.SPAWN_Z;
 export const PIPE_REMOVE_Z = CONFIG.PIPES.REMOVE_Z;
 export const PIPE_Y_PATTERN = CONFIG.PIPES.Y_PATTERN;
 export const EXPLOSION_COLORS = CONFIG.VISUALS.COLORS.EXPLOSION;
+export const BLOOM = CONFIG.VISUALS.BLOOM;

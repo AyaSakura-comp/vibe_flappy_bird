@@ -167,6 +167,7 @@ const { checkCollision } = await import('../js/collision.js');
 const {
   GRAVITY, FLAP, PIPE_GAP, PIPE_SPEED, PIPE_SPACING,
   SPAWN_MS, PIPE_Y_PATTERN, EXPLOSION_COLORS, PIPE_REMOVE_Z,
+  BLOOM, CONFIG
 } = await import('../js/constants.js');
 const { createBird } = await import('../js/bird.js');
 const { createEnvironment, updateEnvironment } = await import('../js/environment.js');
@@ -220,6 +221,8 @@ describe('constants', () => {
     assert.ok(PIPE_SPEED > 0);
     assert.ok(PIPE_SPACING > 0);
     assert.ok(SPAWN_MS > 0);
+    assert.ok(BLOOM.STRENGTH > 0);
+    assert.ok(CONFIG.VISUALS.POST_PROCESSING.COLOR_GRADE.CONTRAST > 0);
   });
   it('PIPE_GAP is safe at all offsets', () => {
     const maxOff = Math.max(...PIPE_Y_PATTERN.map(Math.abs));
