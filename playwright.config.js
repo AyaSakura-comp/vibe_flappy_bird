@@ -8,7 +8,7 @@ module.exports = defineConfig({
   use: {
     video: 'on',
     headless: true,
-    viewport: { width: 720, height: 1280 },
+    viewport: { width: 1080, height: 1920 },
   },
   webServer: {
     command: 'node node_modules/http-server/bin/http-server . -p 3457 --cors',

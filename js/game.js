@@ -153,11 +153,14 @@ function loop(now) {
 
     eng.material.color.setHSL((now * 0.001) % 1, 1, 0.6);
 
-    if (now - lastSpawn >= SPAWN_MS) { spawnPipe(scene); lastSpawn = now; }
+    // Allow test override of pipe speed via window.__GAME_CONFIG mutation
+    const pipeSpeed = CONFIG.PIPES.SPEED;
+    const spawnMs   = Math.round(CONFIG.PIPES.SPACING / (pipeSpeed * 60) * 1000);
+    if (now - lastSpawn >= spawnMs) { spawnPipe(scene); lastSpawn = now; }
 
     for (let i = pipes.length - 1; i >= 0; i--) {
       const p = pipes[i];
-      p.group.position.z += PIPE_SPEED * dt;
+      p.group.position.z += pipeSpeed * dt;
 
       if (!p.scored && p.group.position.z > 1) {
         p.scored = true;
@@ -193,10 +196,16 @@ function loop(now) {
   window.__FLAPPY_SCORE   = score;
   window.__FLAPPY_STARTED = started;
   window.__FLAPPY_OVER    = gameOver;
-  const _np = pipes.filter(p => !p.scored).sort((a, b) => b.group.position.z - a.group.position.z)[0];
-  window.__FLAPPY_NEXT_GAP_Y = _np ? (_np.gapTop + _np.gapBot) / 2 : 0;
+  const _unscored = pipes.filter(p => !p.scored).sort((a, b) => b.group.position.z - a.group.position.z);
+  const _np  = _unscored[0];
+  const _np2 = _unscored[1];
+  window.__FLAPPY_NEXT_GAP_Y   = _np ? (_np.gapTop + _np.gapBot) / 2 : 0;
   window.__FLAPPY_NEXT_GAP_TOP = _np ? _np.gapTop : 0;
   window.__FLAPPY_NEXT_GAP_BOT = _np ? _np.gapBot : 0;
+  window.__FLAPPY_NEXT_PIPE_Z  = _np ? _np.group.position.z : -99;
+  window.__FLAPPY_NEXT2_GAP_TOP = _np2 ? _np2.gapTop : 0;
+  window.__FLAPPY_NEXT2_GAP_BOT = _np2 ? _np2.gapBot : 0;
+  window.__FLAPPY_NEXT2_PIPE_Z  = _np2 ? _np2.group.position.z : -99;
   window.__FLAPPY_SHAKE_AMP    = shakeAmp;
 
   // Screen shake — sine wave at ~8Hz so it's visible in compressed video
@@ -226,6 +235,11 @@ window.__FLAPPY_START_QUIET = () => {
     lastSpawn = performance.now();
     overlayEl.classList.add('hidden');
   }
+};
+
+// ── Test API: direct restart (bypasses overlay timing) ───────────────────
+window.__FLAPPY_RESTART = () => {
+  if (gameOver) restartGame();
 };
 
 // ── Init ─────────────────────────────────────────────────────────────────
