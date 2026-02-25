@@ -15,9 +15,9 @@ export function createPostProcessing(renderer, scene, camera) {
   // 2. Bloom — the crucial neon glow
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    2.0,   // strength — cranked for neon bleed
-    0.5,   // radius
-    0.1    // threshold — lowered so pure neon colors (like magenta) can bloom
+    0.8,   // strength — reduced to be less overpowering
+    0.4,   // radius
+    0.3    // threshold — increased slightly to avoid blooming too much background
   );
   composer.addPass(bloomPass);
 
