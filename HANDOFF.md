@@ -3,7 +3,14 @@
 ## Project Overview
 Cyber Flap is a cyberpunk-themed 3D Flappy Bird clone built with Three.js (r128) and ES Modules. It uses a modular architecture and features automated testing with Playwright, including video-based visual verification via Gemini.
 
-## Recent Accomplishments (Session Feb 24, 2026 — Parallax & Polish)
+## Recent Accomplishments (Session Feb 25, 2026 — Synthwave Visual Overhaul)
+- **Geometry & Assets**: Replaced basic buildings with beveled skyscrapers (neon edge highlights) and added a wireframe mountain parallax layer near the horizon.
+- **Materials & Shaders**: Converted building materials to dark, reflective `MeshStandardMaterial` with softened lighting (`HemisphereLight`). Added a continuous scrolling neon grid floor using a custom `ShaderMaterial`.
+- **Strict Neon Palette**: Standardized all emissive colors across the game to pure Neon Cyan (`#00e5ff`), Hot Pink (`#ff00ff`), Electric Purple (`#bc13fe`), and Neon Orange (`#ff6600`), replacing scattered windows with dense, occasionally blinking grids.
+- **Post-Processing Stack**: Implemented a full `EffectComposer` pipeline using unpkg ES modules via an HTML import map. The stack includes `UnrealBloomPass` for neon glow, a custom color grading pass (crushed shadows, magenta midtones), a vignette, and animated film grain with chromatic aberration.
+- **Architecture**: Migrated all global `window.THREE` usage to proper ES module imports (`import * as THREE from 'three'`) and created a local mock package to maintain the 59 passing unit tests.
+
+## Previous Accomplishments (Session Feb 24, 2026 — Parallax & Polish)
 - **Parallax Background**: Implemented background movement for buildings and windows at 25% of `PIPE_SPEED` along the diagonal, creating a sense of forward motion and depth. Buildings wrap automatically at `Z=15`.
 - **Infinite Grid Scroll**: Modified the ground grid to scroll toward the camera and wrap every 2 units, providing a seamless "infinite floor" effect that matches the player's speed.
 - **Atmospheric Fog**: Added linear `THREE.Fog(0x1a0044, 20, 80)` matching the sky color. Distant objects now fade into a purple haze, improving immersion and hiding object pop-in.

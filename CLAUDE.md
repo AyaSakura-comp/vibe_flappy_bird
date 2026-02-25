@@ -14,6 +14,7 @@ js/
   pipes.js          — makePipeSegment(), spawnPipe(), prefillPipes(), resetPipes(), pipes array
   trail.js          — Neon data trail: createTrail(), updateTrail(), resetTrail()
   environment.js    — Ground, grid, skyline, lighting → { cyanLight, magentaLight }
+  postprocessing.js — EffectComposer stack: Bloom, Color Grading, Vignette, Film Grain
   game.js           — Main orchestrator: state, input, game loop, window.__FLAPPY_* test API
 tests/
   unit.test.js      — 53 unit tests (node:test) covering all modules
@@ -32,9 +33,11 @@ package.json
 ## Architecture
 
 - ES modules (`<script type="module">`) — no bundler
-- Three.js loaded via CDN `<script>` tag, accessed as `window.THREE` in modules
+- Three.js loaded via an **import map** in `index.html` pointing to unpkg (r128), accessed via `import * as THREE from 'three'`
+- Post-processing stack (Bloom, Color Grading, Vignette, Film Grain) handled in `js/postprocessing.js` using `EffectComposer`
 - `game.js` imports all modules and orchestrates the game loop
 - Test API exposed on `window.__FLAPPY_*` (BIRD_Y, SCORE, STARTED, OVER, NEXT_GAP_Y/TOP/BOT)
+- Local `three` mock package located in `node_modules/three` allows Node.js unit tests to resolve ES module imports
 
 ## Running
 
