@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CONFIG } from './constants.js';
 
 function createGradientBackground(scene) {
   // Solid purple sky background — clearly visible from the angled camera
@@ -207,17 +208,7 @@ export function createEnvironment(scene) {
   // Verified by projection math: screenX = 0.707*(x-z)/depth, so x≈z keeps buildings
   // centered. Small x-z offsets (±3) spread them left/right without going off-screen.
   // Near row (depth 32-40), far row (depth 40-50), all visible from camera.
-  const buildingDefs = [
-    // x,   w,   d,  h,    z      (x≈z ± small offset)
-    { x: -18, w: 2.0, d: 2.0, h: 10, z:  -8 }, // center, nearest
-    { x: -19, w: 1.8, d: 1.8, h: 14, z: -12 }, // slight right
-    { x: -22, w: 2.0, d: 2.0, h:  9, z:  -9 }, // slight left
-    { x: -23, w: 1.5, d: 1.5, h: 18, z: -13 }, // center, mid depth
-    { x: -24, w: 1.8, d: 1.8, h: 12, z: -17 }, // slight right
-    { x: -27, w: 2.0, d: 2.0, h:  8, z: -14 }, // slight left
-    { x: -28, w: 1.5, d: 1.5, h: 20, z: -18 }, // center, deeper
-    { x: -30, w: 1.8, d: 1.8, h: 15, z: -20 }, // center, deepest near
-  ];
+  const buildingDefs = CONFIG.ENVIRONMENT.CITY.BUILDINGS;
 
   const edgeMat1 = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const edgeMat2 = new THREE.MeshBasicMaterial({ color: 0xff00ff });
@@ -257,14 +248,7 @@ export function createEnvironment(scene) {
 
   // Far row — darker silhouettes, all along x≈z diagonal
   const distantBuildingMat = new THREE.MeshLambertMaterial({ color: 0x0c0020 });
-  const distantDefs = [
-    { x: -32, w: 2.5, d: 2.0, h: 22, z: -22 },
-    { x: -33, w: 2.0, d: 1.8, h: 16, z: -26 }, // slight right
-    { x: -36, w: 2.0, d: 1.8, h: 14, z: -23 }, // slight left
-    { x: -37, w: 2.5, d: 2.0, h: 24, z: -27 },
-    { x: -38, w: 2.0, d: 1.8, h: 18, z: -24 }, // slight left
-    { x: -34, w: 2.0, d: 1.8, h: 20, z: -28 }, // slight right
-  ];
+  const distantDefs = CONFIG.ENVIRONMENT.CITY.DISTANT_BUILDINGS;
 
   distantDefs.forEach(({ x, w, d, h, z }) => {
     const group = new THREE.Group();
@@ -308,25 +292,27 @@ export function createEnvironment(scene) {
 
 export function updateEnvironment(envState, dt, isMoving = false) {
   if (isMoving) {
-    const parallaxSpeed = 0.025; // 25% of PIPE_SPEED
+    const parallaxSpeed = CONFIG.ENVIRONMENT.PARALLAX_SPEED;
+    const wrapZ = CONFIG.ENVIRONMENT.CITY.WRAP_Z;
+    const wrapDist = CONFIG.ENVIRONMENT.CITY.WRAP_DISTANCE;
 
     // 1. Move & Wrap Buildings
     if (envState.cityObjects) {
       for (const obj of envState.cityObjects) {
         obj.position.x += parallaxSpeed * dt;
         obj.position.z += parallaxSpeed * dt;
-        // Wrap buildings when they go past camera view (Z=15)
-        // They are spread over ~60 units, so wrap back by 60 units
-        if (obj.position.z > 15) {
-          obj.position.x -= 60;
-          obj.position.z -= 60;
+        
+        // Wrap buildings when they go past camera view (Z=WRAP_Z)
+        if (obj.position.z > wrapZ) {
+          obj.position.x -= wrapDist;
+          obj.position.z -= wrapDist;
         }
       }
     }
 
     // 2. Infinite Grid Scroll
     if (envState.gridMaterial) {
-      envState.gridMaterial.uniforms.uOffset.value += 0.025 * dt;
+      envState.gridMaterial.uniforms.uOffset.value += parallaxSpeed * dt;
     }
   }
 

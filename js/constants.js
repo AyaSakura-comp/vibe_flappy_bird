@@ -23,8 +23,8 @@ export const CONFIG = {
       EXPLOSION: [0x00ffff, 0xff00ff, 0xffffff, 0xff6600, 0xffff00]
     },
     BLOOM: {
-      STRENGTH: 1.4,
-      RADIUS: 1.2,
+      STRENGTH: 0.8,
+      RADIUS: 0.4,
       THRESHOLD: 0.3
     },
     POST_PROCESSING: {
@@ -45,6 +45,31 @@ export const CONFIG = {
       CHROMA: {
         AMOUNT: 0.003
       }
+    }
+  },
+  ENVIRONMENT: {
+    PARALLAX_SPEED: 0.025,
+    CITY: {
+      WRAP_Z: 15.0,
+      WRAP_DISTANCE: 40.0, // Reduced from 60 to fix empty gaps
+      BUILDINGS: [
+        { x: -18, w: 2.0, d: 2.0, h: 10, z:  -8 },
+        { x: -19, w: 1.8, d: 1.8, h: 14, z: -12 },
+        { x: -22, w: 2.0, d: 2.0, h:  9, z:  -9 },
+        { x: -23, w: 1.5, d: 1.5, h: 18, z: -13 },
+        { x: -24, w: 1.8, d: 1.8, h: 12, z: -17 },
+        { x: -27, w: 2.0, d: 2.0, h:  8, z: -14 },
+        { x: -28, w: 1.5, d: 1.5, h: 20, z: -18 },
+        { x: -30, w: 1.8, d: 1.8, h: 15, z: -20 },
+      ],
+      DISTANT_BUILDINGS: [
+        { x: -32, w: 2.5, d: 2.0, h: 22, z: -22 },
+        { x: -33, w: 2.0, d: 1.8, h: 16, z: -26 },
+        { x: -36, w: 2.0, d: 1.8, h: 14, z: -23 },
+        { x: -37, w: 2.5, d: 2.0, h: 24, z: -27 },
+        { x: -38, w: 2.0, d: 1.8, h: 18, z: -24 },
+        { x: -34, w: 2.0, d: 1.8, h: 20, z: -28 },
+      ]
     }
   }
 };
