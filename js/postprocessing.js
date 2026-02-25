@@ -64,8 +64,8 @@ export function createPostProcessing(renderer, scene, camera) {
   // 5. Film grain + scanlines
   const filmPass = new ShaderPass(FilmShader);
   filmPass.uniforms['nIntensity'].value = 0.25;  // subtle grain
-  filmPass.uniforms['sIntensity'].value = 0.04;  // faint scanlines
-  filmPass.uniforms['sCount'].value = 800;
+  filmPass.uniforms['sIntensity'].value = 0.15;  // visible scanlines
+  filmPass.uniforms['sCount'].value = 400;       // thicker scanlines
   filmPass.uniforms['grayscale'].value = 0;
   composer.addPass(filmPass);
 
