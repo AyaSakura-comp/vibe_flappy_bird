@@ -123,6 +123,9 @@ function createWireframeMountains(scene) {
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x0a0015, 0.6));
+  
+  // Add subtle gradient lighting from sky to ground
+  scene.add(new THREE.HemisphereLight(0x1a0044, 0x000005, 0.4));
 
   // Add linear fog matching sky color exactly
   scene.fog = new THREE.Fog(0x1a0044, 20, 80);
@@ -157,7 +160,7 @@ export function createEnvironment(scene) {
   // Near row (d=20-24 from origin), far row (d=26-30).
   const cityObjects = [];
   const blinkingWindows = [];
-  const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 });
+  const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.5, roughness: 0.6 });
   const windowMats = [
     new THREE.MeshBasicMaterial({ color: 0x00e5ff }), // Neon Cyan
     new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Hot Pink

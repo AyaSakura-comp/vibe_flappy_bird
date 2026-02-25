@@ -91,6 +91,9 @@ globalThis.window = {
     AmbientLight: class {
       constructor() { this.position = mockVec3(); this._type = 'AmbientLight'; }
     },
+    HemisphereLight: class {
+      constructor() { this.position = mockVec3(); this._type = 'HemisphereLight'; }
+    },
     DirectionalLight: class {
       constructor() { this.position = mockVec3(); this._type = 'DirectionalLight'; }
     },
