@@ -1,6 +1,5 @@
 import { EXPLOSION_COLORS } from './constants.js';
-
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 const particles = [];
 

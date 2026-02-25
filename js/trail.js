@@ -1,4 +1,4 @@
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 // Trail: history of bird positions, with slight X wobble so it's visible
 // from the front camera as a wavy neon streak.

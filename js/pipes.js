@@ -1,6 +1,5 @@
 import { PIPE_GAP, PIPE_Y_PATTERN, PIPE_SPACING } from './constants.js';
-
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 export const pipes = [];
 export let pipeCount = 0;

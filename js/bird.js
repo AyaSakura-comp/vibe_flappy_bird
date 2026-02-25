@@ -1,4 +1,4 @@
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 export function createBird(scene) {
   const birdGroup = new THREE.Group();

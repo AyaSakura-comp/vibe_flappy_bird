@@ -1,5 +1,3 @@
-const THREE = window.THREE;
-
 export const GRAVITY    = 0.003;
 export const FLAP       = -0.13;
 export const PIPE_GAP      = 7.5;

@@ -1,4 +1,4 @@
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 function createGradientBackground(scene) {
   // Solid purple sky background — clearly visible from the angled camera

@@ -5,8 +5,7 @@ import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.j
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
 import { checkCollision } from './collision.js';
 import { createTrail, updateTrail, resetTrail } from './trail.js';
-
-const THREE = window.THREE;
+import * as THREE from 'three';
 
 // ── Scene setup ──────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
