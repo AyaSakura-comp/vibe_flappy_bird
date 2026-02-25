@@ -19,5 +19,39 @@ export function createPostProcessing(renderer, scene, camera) {
   );
   composer.addPass(bloomPass);
 
+  // 3. Color grading — crush shadows, push midtones to magenta
+  const ColorGradeShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      shadowCrush: { value: 0.15 },
+      magentaPush: { value: 0.08 },
+      contrast: { value: 1.2 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform float shadowCrush;
+      uniform float magentaPush;
+      uniform float contrast;
+      varying vec2 vUv;
+      void main() {
+        vec4 tex = texture2D(tDiffuse, vUv);
+        vec3 c = tex.rgb;
+        c = max(c - shadowCrush, 0.0) / (1.0 - shadowCrush);
+        c = (c - 0.5) * contrast + 0.5;
+        float lum = dot(c, vec3(0.299, 0.587, 0.114));
+        float midMask = smoothstep(0.0, 0.5, lum) * smoothstep(1.0, 0.5, lum);
+        c.r += magentaPush * midMask;
+        c.b += magentaPush * midMask * 0.5;
+        gl_FragColor = vec4(clamp(c, 0.0, 1.0), tex.a);
+      }
+    `,
+  };
+  const gradePass = new ShaderPass(ColorGradeShader);
+  composer.addPass(gradePass);
+
   return { composer, bloomPass };
 }
