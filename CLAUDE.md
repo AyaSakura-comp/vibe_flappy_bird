@@ -10,6 +10,7 @@ js/
   constants.js      — Centralized CONFIG: Physics, Pipes, Visuals, and Colors
   collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin)
   explosion.js      — Particle system: spawnExplosion(), updateExplosion()
+  audio.js          — Background music: createAudio(), playBgm(), pauseBgm()
   bird.js           — createBird(scene) → { birdGroup, eng }
   pipes.js          — Pipe management: spawning, recycling, pattern generation
   trail.js          — Neon data trail trailing the bird
@@ -17,7 +18,7 @@ js/
   postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration (Configured via constants.js)
   game.js           — Main orchestrator: Game loop, State management, Input, Test API
 tests/
-  unit.test.js      — 59 unit tests (node:test) covering all modules
+  unit.test.js      — 63 unit tests (node:test) covering all modules
   high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes in ≤15s
   flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
   collision.spec.js — Collision test: bird dies on cap contact
@@ -73,7 +74,7 @@ node node_modules/@playwright/test/cli.js test
   - Detects pipe bunching (caused by GPU ReadPixels dt-capping) via `__FLAPPY_NEXT2_*` look-ahead; targets gap intersection when two pipes share the collision zone.
   - Applies 2× pipe speed override (`window.__GAME_CONFIG.PIPES.SPEED = 0.32`) so 20+ pipes complete in ~13s on this WSL2 hardware (vs ~20s at default speed).
   - Uses `waitForFunction({ polling: 'raf' })` for zero-IPC score detection.
-- **Unit Tests**: `npm run test:unit` runs 59 tests using a local Three.js mock.
+- **Unit Tests**: `npm run test:unit` runs 63 tests using a local Three.js mock.
 - **Videos**: Playwright is configured to record videos of all E2E test runs for visual verification.
   - Viewport: 1080×1920 (portrait/mobile). Video target: ≤15s.
 
