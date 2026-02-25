@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
 
 export function createPostProcessing(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
@@ -52,6 +53,12 @@ export function createPostProcessing(renderer, scene, camera) {
   };
   const gradePass = new ShaderPass(ColorGradeShader);
   composer.addPass(gradePass);
+
+  // 4. Vignette — darken edges
+  const vignettePass = new ShaderPass(VignetteShader);
+  vignettePass.uniforms['offset'].value = 1.0;
+  vignettePass.uniforms['darkness'].value = 1.4;
+  composer.addPass(vignettePass);
 
   return { composer, bloomPass };
 }
