@@ -159,10 +159,10 @@ export function createEnvironment(scene) {
   const blinkingWindows = [];
   const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 });
   const windowMats = [
-    new THREE.MeshBasicMaterial({ color: 0x00ffff }), // Cyan
-    new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Magenta
-    new THREE.MeshBasicMaterial({ color: 0xffff00 }), // Yellow
-    new THREE.MeshBasicMaterial({ color: 0x00ff00 }), // Green
+    new THREE.MeshBasicMaterial({ color: 0x00e5ff }), // Neon Cyan
+    new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Hot Pink
+    new THREE.MeshBasicMaterial({ color: 0xbc13fe }), // Electric Purple
+    new THREE.MeshBasicMaterial({ color: 0xff6600 }), // Neon Orange
   ];
 
   // Buildings placed along the x≈z diagonal — the camera's view center line.
