@@ -5,6 +5,7 @@ import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.j
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
 import { checkCollision } from './collision.js';
 import { createTrail, updateTrail, resetTrail } from './trail.js';
+import { createPostProcessing } from './postprocessing.js';
 import * as THREE from 'three';
 
 // ── Scene setup ──────────────────────────────────────────────────────────
@@ -18,6 +19,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
+
+const { composer } = createPostProcessing(renderer, scene, camera);
 
 // ── Environment ──────────────────────────────────────────────────────────
 const { cyanLight, magentaLight, envState } = createEnvironment(scene);
@@ -71,6 +74,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // ── Game over / restart ──────────────────────────────────────────────────
@@ -182,7 +186,7 @@ function loop(now) {
     camera.position.set(15, 5, 15);
   }
 
-  renderer.render(scene, camera);
+  composer.render();
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────
