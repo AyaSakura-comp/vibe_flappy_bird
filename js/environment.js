@@ -156,6 +156,7 @@ export function createEnvironment(scene) {
   // Right vector in XZ: (0.707, 0, -0.707). Buildings spread along this.
   // Near row (d=20-24 from origin), far row (d=26-30).
   const cityObjects = [];
+  const blinkingWindows = [];
   const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 });
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00ff });
@@ -195,13 +196,19 @@ export function createEnvironment(scene) {
     
     for (let wy = startY; wy <= endY; wy += 0.5) {
       for (let wx = startX; wx <= endX; wx += 0.4) {
-        const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
-        const mat = Math.random() > 0.5 ? windowMat : winMat2;
-        const win = new THREE.Mesh(wGeo, mat);
-        
-        // Add window as a child of the building group so it inherits rotation
-        win.position.set(wx, wy, d / 2 + 0.05);
-        group.add(win);
+        if (Math.random() > 0.4) { // Not all windows have light
+          const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
+          const mat = Math.random() > 0.5 ? windowMat : winMat2;
+          const win = new THREE.Mesh(wGeo, mat);
+          
+          // Add window as a child of the building group so it inherits rotation
+          win.position.set(wx, wy, d / 2 + 0.05);
+          group.add(win);
+          
+          if (Math.random() > 0.85) { // 15% chance to be a blinking window
+            blinkingWindows.push(win);
+          }
+        }
       }
     }
   });
@@ -240,12 +247,16 @@ export function createEnvironment(scene) {
           const win  = new THREE.Mesh(wGeo, windowMat);
           win.position.set(wx, wy, d / 2 + 0.05);
           group.add(win);
+          
+          if (Math.random() > 0.85) {
+            blinkingWindows.push(win);
+          }
         }
       }
     }
   });
 
-  const envState = { cityObjects, gridHelper };
+  const envState = { cityObjects, gridHelper, blinkingWindows };
   createWireframeMountains(scene);
   createDigitalRain(scene, envState);
   createParallaxWireframes(scene, envState);
@@ -299,6 +310,14 @@ export function updateEnvironment(envState, dt, isMoving = false) {
     for (const obj of envState.parallaxObjects) {
       obj.mesh.rotation.x += obj.speedX * dt;
       obj.mesh.rotation.y += obj.speedY * dt;
+    }
+  }
+
+  if (envState.blinkingWindows) {
+    for (const win of envState.blinkingWindows) {
+      if (Math.random() < 0.02 * dt) {
+        win.visible = !win.visible;
+      }
     }
   }
 }
