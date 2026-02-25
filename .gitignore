@@ -3,6 +3,3 @@ playwright-browsers/
 test-results/
 *.png
 test-resolutions.js
-debug*.webm
-gameplay-analysis.webm
-videos/
