@@ -108,28 +108,7 @@ In `restartGame()`, at the end of the function (after `prefillPipes(scene);`), a
   playBgm(audio);
 ```
 
-**Step 6: Verify the game runs without JS errors**
-
-```bash
-node node_modules/http-server/bin/http-server . -p 1124 --cors -c-1 &
-# Open browser to http://localhost:1124 and check console — no errors expected
-```
-
-**Step 7: Commit**
-
-```bash
-git add js/game.js
-git commit -m "feat: wire BGM play/pause into game state transitions"
-```
-
----
-
-### Task 3: Smoke-test with Playwright
-
-**Files:**
-- No new files — run existing E2E suite to confirm nothing is broken
-
-**Step 1: Run the full E2E test suite**
+**Step 6: Run E2E tests to verify no regressions**
 
 ```bash
 node node_modules/@playwright/test/cli.js test
@@ -137,7 +116,7 @@ node node_modules/@playwright/test/cli.js test
 
 Expected: all tests pass (the BGM `audio.play()` call in a headless browser may emit an unhandled promise rejection warning — this is acceptable since headless Chrome blocks autoplay, but it must not crash the game or fail any assertions).
 
-**Step 2: If `audio.play()` rejection causes test failures**
+**Step 7: If `audio.play()` rejection causes test failures**
 
 Guard the call in `audio.js`:
 
@@ -147,17 +126,66 @@ export function playBgm(audio) {
 }
 ```
 
-Commit the fix:
-
-```bash
-git add js/audio.js
-git commit -m "fix: swallow autoplay rejection in headless/test environments"
-```
-
-**Step 3: Confirm all tests still pass**
+Edit `js/audio.js` to add the `.catch()` guard and re-run tests:
 
 ```bash
 node node_modules/@playwright/test/cli.js test
 ```
 
-Expected: all tests pass, no regressions.
+Expected: all tests pass.
+
+**Step 8: Record gameplay video with `record-gameplay.spec.js`**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/record-gameplay.spec.js
+```
+
+This will generate a video in `test-results/` showing the game with BGM playing.
+
+**Step 9: Verify the video with `/verify-video`**
+
+Use the verify-video skill to check the recording:
+- Confirm game starts normally (UI shows "CYBER FLAP")
+- Confirm bird flaps on click/space and game begins
+- Confirm "SYSTEM FAILURE" overlay appears on death
+- Check audio context (should show audio element is playing, no console errors)
+
+Once video verification passes, proceed to commit.
+
+**Step 10: Commit only after verification**
+
+```bash
+git add js/game.js
+git commit -m "feat: wire BGM play/pause into game state transitions"
+```
+
+---
+
+### Task 3: Verify game behavior end-to-end
+
+**Files:**
+- No new files — run the existing `high-score.spec.js` E2E test to confirm BGM doesn't break AI gameplay
+
+**Step 1: Run high-score test**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+```
+
+Expected: test passes and records a video.
+
+**Step 2: Verify high-score video with `/verify-video`**
+
+Use the verify-video skill to confirm:
+- Game starts and BGM begins playing
+- Bird navigates pipes correctly
+- BGM continues playing throughout (no stutters/pauses)
+- Game Over state shown at end
+
+**Step 3: Final verification — all tests pass**
+
+```bash
+node node_modules/@playwright/test/cli.js test
+```
+
+Expected: all tests pass, no regressions, BGM integrates cleanly.
