@@ -42,7 +42,7 @@ function createRetroSun(scene) {
 function createDigitalRain(scene, envState) {
   const rainDrops = [];
   const rainMat1 = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6 });
-  const rainMat2 = new THREE.MeshBasicMaterial({ color: 0xff00aa, transparent: true, opacity: 0.4 });
+  const rainMat2 = new THREE.MeshBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.4 });
 
   for (let i = 0; i < 50; i++) {
     const geo = new THREE.BoxGeometry(0.12, 0.6 + Math.random() * 0.8, 0.12);
@@ -131,7 +131,7 @@ export function createEnvironment(scene) {
   cyanLight.position.set(-3, 2, 6);
   scene.add(cyanLight);
 
-  const magentaLight = new THREE.PointLight(0xff00aa, 1.2, 30);
+  const magentaLight = new THREE.PointLight(0xff00ff, 1.2, 30);
   magentaLight.position.set(3, -2, 4);
   scene.add(magentaLight);
 
@@ -152,7 +152,7 @@ export function createEnvironment(scene) {
   scene.add(ground);
 
   // Grid
-  const gridHelper = new THREE.GridHelper(60, 30, 0xff00aa, 0x330066);
+  const gridHelper = new THREE.GridHelper(60, 30, 0xff00ff, 0x330066);
   gridHelper.position.set(0, -6.19, -10);
   scene.add(gridHelper);
 
@@ -182,7 +182,7 @@ export function createEnvironment(scene) {
   ];
 
   const edgeMat1 = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-  const edgeMat2 = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+  const edgeMat2 = new THREE.MeshBasicMaterial({ color: 0xff00ff });
 
   buildingDefs.forEach(({ x, w, d, h, z }, index) => {
     const edgeMat = (index % 2 === 0) ? edgeMat1 : edgeMat2;

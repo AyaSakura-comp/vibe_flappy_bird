@@ -356,6 +356,26 @@ describe('createEnvironment', () => {
     assert.ok(stdMatsCount >= 5, `expected >= 5 metallic meshes, got ${stdMatsCount}`);
   });
 
+  it('emissive elements use pure cyan 0x00ffff or hot pink 0xff00ff', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    let emissiveColors = [];
+    scene.children.forEach(c => {
+      if (c.material && c.material.color) {
+        emissiveColors.push(c.material.color);
+      }
+      if (c.children) {
+        c.children.forEach(child => {
+          if (child.material && child.material.color) {
+            emissiveColors.push(child.material.color);
+          }
+        });
+      }
+    });
+    emissiveColors = emissiveColors.filter(c => c === 0x00ffff || c === 0xff00ff);
+    assert.ok(emissiveColors.length >= 4, 'expected neon-colored emissive meshes');
+  });
+
   it('has wireframe mountain meshes behind the skyline', () => {
     const scene = mockScene();
     createEnvironment(scene);

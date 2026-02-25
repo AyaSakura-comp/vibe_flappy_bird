@@ -20,7 +20,7 @@ export function createBird(scene) {
   birdGroup.add(rim);
 
   const engGeo = new THREE.SphereGeometry(0.07, 8, 8);
-  const engMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+  const engMat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
   const eng    = new THREE.Mesh(engGeo, engMat);
   eng.position.set(0, 0, -0.22);
   birdGroup.add(eng);

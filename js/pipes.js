@@ -18,7 +18,7 @@ export function makePipeSegment(height) {
   group.add(new THREE.Mesh(cylGeo, cylMat));
 
   const capGeo = new THREE.CylinderGeometry(1.01, 1.01, 0.08, 16);
-  const capMat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+  const capMat = new THREE.MeshBasicMaterial({ color: 0xff00ff });
   const cap    = new THREE.Mesh(capGeo, capMat);
   group.add(cap);
 
