@@ -84,6 +84,9 @@ globalThis.window = {
     MeshLambertMaterial: class {
       constructor(opts) { Object.assign(this, mockMaterial(opts)); }
     },
+    MeshStandardMaterial: class {
+      constructor(opts) { Object.assign(this, mockMaterial(opts)); }
+    },
     AmbientLight: class {
       constructor() { this.position = mockVec3(); }
     },
@@ -284,6 +287,16 @@ describe('createEnvironment', () => {
     grounds.forEach(g => {
       assert.ok(g.position.z > -30, `ground at z=${g.position.z} should be > -30`);
     });
+  });
+
+  it('near skyline buildings use BoxGeometry with bevel-like edge meshes', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    // Buildings should have edge highlight children (emissive line meshes)
+    const buildingGroups = scene.children.filter(c =>
+      c.children && c.children.length >= 2 && c.position && c.position.y > -6
+    );
+    assert.ok(buildingGroups.length >= 5, `expected >= 5 beveled building groups, got ${buildingGroups.length}`);
   });
 
   it('returns envState object', () => {

@@ -82,6 +82,29 @@ function createParallaxWireframes(scene, envState) {
   envState.parallaxObjects = parallaxObjects;
 }
 
+function createBuilding(w, d, h, mat, edgeMat) {
+  const group = new THREE.Group();
+  
+  const bodyGeo = new THREE.BoxGeometry(w, h, d);
+  const bodyMesh = new THREE.Mesh(bodyGeo, mat);
+  group.add(bodyMesh);
+
+  if (edgeMat) {
+    const edgeW = 0.06;
+    const edgeGeo = new THREE.BoxGeometry(edgeW, h, edgeW);
+    const edgeOffsetsX = [w/2, w/2, -w/2, -w/2];
+    const edgeOffsetsZ = [d/2, -d/2, d/2, -d/2];
+    
+    for (let i = 0; i < 4; i++) {
+      const edge = new THREE.Mesh(edgeGeo, edgeMat);
+      edge.position.set(edgeOffsetsX[i], 0, edgeOffsetsZ[i]);
+      group.add(edge);
+    }
+  }
+
+  return group;
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -123,7 +146,7 @@ export function createEnvironment(scene) {
   // Right vector in XZ: (0.707, 0, -0.707). Buildings spread along this.
   // Near row (d=20-24 from origin), far row (d=26-30).
   const cityObjects = [];
-  const buildingMat = new THREE.MeshLambertMaterial({ color: 0x180030 });
+  const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3 });
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
   const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
 
@@ -143,16 +166,19 @@ export function createEnvironment(scene) {
     { x: -30, w: 1.8, d: 1.8, h: 15, z: -20 }, // center, deepest near
   ];
 
-  buildingDefs.forEach(({ x, w, d, h, z }) => {
-    const geo  = new THREE.BoxGeometry(w, h, d);
-    const mesh = new THREE.Mesh(geo, buildingMat);
-    mesh.position.set(x, h / 2 - 6.2, z);
-    mesh.rotation.y = Math.PI / 4;
-    scene.add(mesh);
-    cityObjects.push(mesh);
+  const edgeMat1 = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+  const edgeMat2 = new THREE.MeshBasicMaterial({ color: 0xff00aa });
 
-    for (let i = 0; i < 4; i++) {
-      const wGeo = new THREE.BoxGeometry(0.15, 0.15, 0.05);
+  buildingDefs.forEach(({ x, w, d, h, z }, index) => {
+    const edgeMat = (index % 2 === 0) ? edgeMat1 : edgeMat2;
+    const group = createBuilding(w, d, h, buildingMat, edgeMat);
+    group.position.set(x, h / 2 - 6.2, z);
+    group.rotation.y = Math.PI / 4;
+    scene.add(group);
+    cityObjects.push(group);
+
+    for (let i = 0; i < 6; i++) {
+      const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
       const mat  = Math.random() > 0.5 ? windowMat : winMat2;
       const win  = new THREE.Mesh(wGeo, mat);
       win.position.set(
