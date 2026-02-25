@@ -105,6 +105,21 @@ function createBuilding(w, d, h, mat, edgeMat) {
   return group;
 }
 
+function createWireframeMountains(scene) {
+  const mMat = new THREE.MeshBasicMaterial({ color: 0x220044, wireframe: true });
+  for (let i = 0; i < 5; i++) {
+    const r = 4 + Math.random() * 4;
+    const h = 3 + Math.random() * 5;
+    const seg = 4 + Math.floor(Math.random() * 3);
+    const mGeo = new THREE.ConeGeometry(r, h, seg);
+    const mesh = new THREE.Mesh(mGeo, mMat);
+    
+    const dist = 40 + Math.random() * 10; 
+    mesh.position.set(-dist + (Math.random() - 0.5) * 15, h / 2 - 6.2, -dist + (Math.random() - 0.5) * 15);
+    scene.add(mesh);
+  }
+}
+
 export function createEnvironment(scene) {
   // Lighting
   scene.add(new THREE.AmbientLight(0x110022, 1.0));
@@ -224,6 +239,7 @@ export function createEnvironment(scene) {
   });
 
   const envState = { cityObjects, gridHelper };
+  createWireframeMountains(scene);
   createDigitalRain(scene, envState);
   createParallaxWireframes(scene, envState);
   return { cyanLight, magentaLight, envState };

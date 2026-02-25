@@ -67,6 +67,7 @@ globalThis.window = {
     CylinderGeometry: class { constructor() {} },
     SphereGeometry: class { constructor() {} },
     PlaneGeometry: class { constructor() {} },
+    ConeGeometry: class { constructor() {} },
     IcosahedronGeometry: class { constructor() {} },
     TorusGeometry: class { constructor() {} },
     OctahedronGeometry: class { constructor() {} },
@@ -337,6 +338,17 @@ describe('createEnvironment', () => {
       c.position.y > -6
     );
     assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings along diagonal, got ${distantBuildings.length}`);
+  });
+
+  it('has wireframe mountain meshes behind the skyline', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    // Mountains: wireframe meshes at depth > buildings, y near ground
+    const mountains = scene.children.filter(c =>
+      c.material && c.material.wireframe === true &&
+      c.position && c.position.y < 0 && c.position.y > -7
+    );
+    assert.ok(mountains.length >= 3, `expected >= 3 wireframe mountains, got ${mountains.length}`);
   });
 
   it('envState.parallaxObjects has 3 wireframe objects', () => {
