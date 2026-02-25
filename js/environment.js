@@ -161,9 +161,9 @@ export function createEnvironment(scene) {
   // Right vector in XZ: (0.707, 0, -0.707). Buildings spread along this.
   // Near row (d=20-24 from origin), far row (d=26-30).
   const cityObjects = [];
-  const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3 });
+  const buildingMat = new THREE.MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 });
   const windowMat   = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-  const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+  const winMat2     = new THREE.MeshBasicMaterial({ color: 0xff00ff });
 
   // Buildings placed along the x≈z diagonal — the camera's view center line.
   // Verified by projection math: screenX = 0.707*(x-z)/depth, so x≈z keeps buildings
@@ -192,17 +192,22 @@ export function createEnvironment(scene) {
     scene.add(group);
     cityObjects.push(group);
 
-    for (let i = 0; i < 6; i++) {
-      const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
-      const mat  = Math.random() > 0.5 ? windowMat : winMat2;
-      const win  = new THREE.Mesh(wGeo, mat);
-      win.position.set(
-        x + (Math.random() - 0.5) * (w - 0.3),
-        (Math.random() - 0.5) * (h - 0.5) + h / 2 - 6.2,
-        z + d / 2 + 0.05
-      );
-      scene.add(win);
-      cityObjects.push(win);
+    // Generate window grid on the front face (facing +z locally)
+    const startY = -h / 2 + 0.5;
+    const endY = h / 2 - 0.5;
+    const startX = -w / 2 + 0.3;
+    const endX = w / 2 - 0.3;
+    
+    for (let wy = startY; wy <= endY; wy += 0.5) {
+      for (let wx = startX; wx <= endX; wx += 0.4) {
+        const wGeo = new THREE.BoxGeometry(0.2, 0.2, 0.05);
+        const mat = Math.random() > 0.5 ? windowMat : winMat2;
+        const win = new THREE.Mesh(wGeo, mat);
+        
+        // Add window as a child of the building group so it inherits rotation
+        win.position.set(wx, wy, d / 2 + 0.05);
+        group.add(win);
+      }
     }
   });
 
@@ -218,23 +223,30 @@ export function createEnvironment(scene) {
   ];
 
   distantDefs.forEach(({ x, w, d, h, z }) => {
+    const group = new THREE.Group();
     const geo  = new THREE.BoxGeometry(w, h, d);
     const mesh = new THREE.Mesh(geo, distantBuildingMat);
-    mesh.position.set(x, h / 2 - 6.2, z);
-    mesh.rotation.y = Math.PI / 4;
-    scene.add(mesh);
-    cityObjects.push(mesh);
+    group.add(mesh);
 
-    for (let i = 0; i < 2; i++) {
-      const wGeo = new THREE.BoxGeometry(0.12, 0.12, 0.05);
-      const win  = new THREE.Mesh(wGeo, windowMat);
-      win.position.set(
-        x + (Math.random() - 0.5) * (w - 0.3),
-        (Math.random() - 0.5) * (h - 0.5) + h / 2 - 6.2,
-        z + d / 2 + 0.05
-      );
-      scene.add(win);
-      cityObjects.push(win);
+    group.position.set(x, h / 2 - 6.2, z);
+    group.rotation.y = Math.PI / 4;
+    scene.add(group);
+    cityObjects.push(group);
+
+    const startY = -h / 2 + 0.5;
+    const endY = h / 2 - 0.5;
+    const startX = -w / 2 + 0.3;
+    const endX = w / 2 - 0.3;
+    
+    for (let wy = startY; wy <= endY; wy += 0.5) {
+      for (let wx = startX; wx <= endX; wx += 0.4) {
+        if (Math.random() > 0.7) { // sparser for distant buildings
+          const wGeo = new THREE.BoxGeometry(0.12, 0.12, 0.05);
+          const win  = new THREE.Mesh(wGeo, windowMat);
+          win.position.set(wx, wy, d / 2 + 0.05);
+          group.add(win);
+        }
+      }
     }
   });
 

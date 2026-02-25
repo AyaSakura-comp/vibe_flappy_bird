@@ -340,6 +340,22 @@ describe('createEnvironment', () => {
     assert.ok(distantBuildings.length >= 6, `expected >= 6 distant buildings along diagonal, got ${distantBuildings.length}`);
   });
 
+  it('building body uses MeshStandardMaterial with metalness', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    let stdMatsCount = 0;
+    scene.children.forEach(c => {
+      if (c.children) {
+        c.children.forEach(child => {
+          if (child.material && child.material.metalness !== undefined && child.material.metalness >= 0.5) {
+            stdMatsCount++;
+          }
+        });
+      }
+    });
+    assert.ok(stdMatsCount >= 5, `expected >= 5 metallic meshes, got ${stdMatsCount}`);
+  });
+
   it('has wireframe mountain meshes behind the skyline', () => {
     const scene = mockScene();
     createEnvironment(scene);
