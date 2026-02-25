@@ -141,18 +141,52 @@ export function createEnvironment(scene) {
   createGradientBackground(scene);
   createRetroSun(scene);
 
-  // Ground — extend along the diagonal the camera sees
-  const groundGeo = new THREE.PlaneGeometry(60, 60, 30, 30);
-  const groundMat = new THREE.MeshBasicMaterial({ color: 0x0a0025, wireframe: false });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
+  // Ground with scrolling neon grid shader
+  const gridMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uOffset: { value: 0.0 },
+      uColor1: { value: new THREE.Color(0xff00ff) },
+      uColor2: { value: new THREE.Color(0x00ffff) },
+      uBgColor: { value: new THREE.Color(0x0a0025) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOffset;
+      uniform vec3 uColor1;
+      uniform vec3 uColor2;
+      uniform vec3 uBgColor;
+      varying vec2 vUv;
+      void main() {
+        vec2 uv = vUv * 30.0;
+        uv.y += uOffset;
+        // fwidth not perfectly supported in all WebGL1, fallback to a small constant for anti-aliasing if needed
+        // Since we're in WebGL2 or high-end WebGL1 via Playwright, fwidth is fine
+        vec2 grid = abs(fract(uv - 0.5) - 0.5) / fwidth(uv);
+        float line = min(grid.x, grid.y);
+        float mask = 1.0 - min(line, 1.0);
+        vec2 cell = floor(uv);
+        float checker = mod(cell.x + cell.y, 2.0);
+        vec3 lineColor = mix(uColor1, uColor2, checker * 0.3);
+        vec3 color = mix(uBgColor, lineColor, mask * 0.7);
+        float fade = smoothstep(0.0, 0.4, vUv.y);
+        color = mix(uBgColor, color, fade);
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+    side: THREE.DoubleSide,
+  });
+
+  const groundGeo = new THREE.PlaneGeometry(60, 60);
+  const ground = new THREE.Mesh(groundGeo, gridMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -6.2, -10);
   scene.add(ground);
-
-  // Grid
-  const gridHelper = new THREE.GridHelper(60, 30, 0xff00ff, 0x330066);
-  gridHelper.position.set(0, -6.19, -10);
-  scene.add(gridHelper);
 
   // City skyline — buildings arranged along the camera view diagonal.
   // Camera at (15,5,15) looks toward (-X,-Z). "Behind" origin = toward (-X,-Z).
@@ -264,7 +298,7 @@ export function createEnvironment(scene) {
     }
   });
 
-  const envState = { cityObjects, gridHelper, blinkingWindows };
+  const envState = { cityObjects, gridMaterial, blinkingWindows };
   createWireframeMountains(scene);
   createDigitalRain(scene, envState);
   createParallaxWireframes(scene, envState);
@@ -290,16 +324,8 @@ export function updateEnvironment(envState, dt, isMoving = false) {
     }
 
     // 2. Infinite Grid Scroll
-    if (envState.gridHelper) {
-      envState.gridHelper.position.x += parallaxSpeed * dt;
-      envState.gridHelper.position.z += parallaxSpeed * dt;
-      // Grid is 60x60 with divisions every 2 units. 
-      // Snapping back by 2 units keeps it seamless.
-      // Threshold is -8 (-10 initial + 2 units)
-      if (envState.gridHelper.position.z > -8) {
-        envState.gridHelper.position.x -= 2;
-        envState.gridHelper.position.z -= 2;
-      }
+    if (envState.gridMaterial) {
+      envState.gridMaterial.uniforms.uOffset.value += 0.025 * dt;
     }
   }
 

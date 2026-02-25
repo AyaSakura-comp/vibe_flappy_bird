@@ -88,6 +88,9 @@ globalThis.window = {
     MeshStandardMaterial: class {
       constructor(opts) { Object.assign(this, mockMaterial(opts)); }
     },
+    ShaderMaterial: class {
+      constructor(opts) { Object.assign(this, mockMaterial(opts)); }
+    },
     AmbientLight: class {
       constructor() { this.position = mockVec3(); this._type = 'AmbientLight'; }
     },
@@ -317,11 +320,11 @@ describe('createEnvironment', () => {
     assert.equal(scene.fog.color.getHex(), 0x1a0044);
   });
 
-  it('envState includes cityObjects and gridHelper for parallax tracking', () => {
+  it('envState includes cityObjects and gridMaterial for parallax tracking', () => {
     const scene = mockScene();
     const { envState } = createEnvironment(scene);
     assert.ok(Array.isArray(envState.cityObjects), 'cityObjects should be an array');
-    assert.ok(envState.gridHelper, 'gridHelper should be tracked');
+    assert.ok(envState.gridMaterial, 'gridMaterial should be tracked');
   });
 
   it('sets scene.background and adds a background plane along the diagonal', () => {
@@ -425,6 +428,14 @@ describe('createEnvironment', () => {
     );
     assert.ok(sunGroups.length >= 1, `expected >= 1 sun group along diagonal, got ${sunGroups.length}`);
   });
+
+  it('ground uses ShaderMaterial with scrollable UV offset', () => {
+    const scene = mockScene();
+    const { envState } = createEnvironment(scene);
+    assert.ok(envState.gridMaterial, 'envState should expose gridMaterial');
+    assert.ok(envState.gridMaterial.uniforms, 'grid material should have uniforms');
+    assert.ok(envState.gridMaterial.uniforms.uOffset, 'grid should have uOffset uniform');
+  });
 });
 
 // ── updateEnvironment ────────────────────────────────────────────────────
@@ -448,13 +459,12 @@ describe('updateEnvironment', () => {
       assert.ok(obj.position.x > startX, 'building should move along diagonal (+x)');
     });
 
-    it('wraps grid position for seamless infinite scroll', () => {
+    it('scrolls grid shader uOffset instead of moving grid position', () => {
       const scene = mockScene();
       const { envState } = createEnvironment(scene);
-      // Threshold is -8 (-10 initial + 2 units move)
-      envState.gridHelper.position.z = -7.9;
+      const startOffset = envState.gridMaterial.uniforms.uOffset.value;
       updateEnvironment(envState, 1, true);
-      assert.ok(envState.gridHelper.position.z < -9, 'grid should snap back by 2 units');
+      assert.ok(envState.gridMaterial.uniforms.uOffset.value > startOffset, 'grid uOffset should increase');
     });
   });
 
