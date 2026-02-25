@@ -18,6 +18,7 @@ js/
   game.js           — Main orchestrator: Game loop, State management, Input, Test API
 tests/
   unit.test.js      — 59 unit tests (node:test) covering all modules
+  high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes in ≤15s
   flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
   collision.spec.js — Collision test: bird dies on cap contact
   golden.spec.js    — Golden test: verify SYSTEM FAILURE state
@@ -48,6 +49,12 @@ package.json
     - **VHS Effects**: Film grain, visible scanlines, and subtle chromatic aberration on edges.
 - **Aspect-Aware Rendering**: FOV and layout are dynamically adjusted to maintain consistent gameplay across 9:16 (mobile) and 16:9 (desktop) viewports.
 - **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
+  - `__FLAPPY_BIRD_Y`, `__FLAPPY_VELOCITY`, `__FLAPPY_SCORE`, `__FLAPPY_STARTED`, `__FLAPPY_OVER`
+  - `__FLAPPY_NEXT_GAP_TOP/BOT`, `__FLAPPY_NEXT_PIPE_Z` — next unscored pipe
+  - `__FLAPPY_NEXT2_GAP_TOP/BOT`, `__FLAPPY_NEXT2_PIPE_Z` — second unscored pipe (look-ahead)
+  - `__FLAPPY_START_QUIET` — start game without flap velocity (for pilot tests)
+  - `__FLAPPY_RESTART` — direct restart bypassing overlay timing
+  - `__GAME_CONFIG` — live reference to CONFIG object; mutations (e.g. PIPES.SPEED) take effect each frame
 
 ## Running
 
@@ -62,6 +69,11 @@ node node_modules/@playwright/test/cli.js test
 ## Test Notes
 
 - **Automated High-Score**: `tests/high-score.spec.js` uses a zero-latency in-browser pilot to record high-score gameplay.
+  - Physics-predictive pilot simulates bird trajectory to target the center of each pipe's safe zone.
+  - Detects pipe bunching (caused by GPU ReadPixels dt-capping) via `__FLAPPY_NEXT2_*` look-ahead; targets gap intersection when two pipes share the collision zone.
+  - Applies 2× pipe speed override (`window.__GAME_CONFIG.PIPES.SPEED = 0.32`) so 20+ pipes complete in ~13s on this WSL2 hardware (vs ~20s at default speed).
+  - Uses `waitForFunction({ polling: 'raf' })` for zero-IPC score detection.
 - **Unit Tests**: `npm run test:unit` runs 59 tests using a local Three.js mock.
 - **Videos**: Playwright is configured to record videos of all E2E test runs for visual verification.
+  - Viewport: 1080×1920 (portrait/mobile). Video target: ≤15s.
 
