@@ -10,11 +10,37 @@
 
 ---
 
+## Visual Verification Protocol
+
+**Every task** follows this before/after workflow to catch regressions and confirm visual changes:
+
+### Before making any code changes:
+```bash
+# Record the BEFORE video using the high-score test (see CLAUDE.md for details)
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task-N-before.webm
+```
+
+### After implementation + unit tests pass:
+```bash
+# Record the AFTER video
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task-N-after.webm
+```
+
+### Compare and verify:
+1. Use `/compare-before-after-with-video` to compare `videos/task-N-before.webm` vs `videos/task-N-after.webm` — describe what specific visual change this task should introduce
+2. If the comparison shows unexpected regressions (gameplay broken, elements missing), fix before committing
+3. Optionally use `/verify-video` on the AFTER video if you need to check specific visual criteria
+4. **Only commit after confirming the changes match expectations**
+
+---
+
 ## Critical Constraint: CDN + No Bundler
 
 Three.js r128's post-processing JSM modules (on unpkg) use `import ... from 'three'`. Our project loads Three.js via a `<script>` tag. To make both work:
 
-1. Switch `index.html` to use an **import map** pointing `'three'` to the cdnjs r128 ES module build
+1. Switch `index.html` to use an **import map** pointing `'three'` to the unpkg r128 ES module build
 2. Load post-processing modules from `unpkg.com/three@0.128.0/examples/jsm/...`
 3. Keep `game.js` as `<script type="module">` (already is)
 4. Remove the old `<script src="...three.min.js">` tag — the import map replaces it
@@ -38,11 +64,17 @@ Three.js r128's post-processing JSM modules (on unpkg) use `import ... from 'thr
 
 **Files:**
 - Modify: `index.html` (replace script tag with import map)
-- Modify: `js/game.js` (add `import * as THREE from 'three'`, remove `const THREE = window.THREE`)
-- Modify: `js/environment.js`, `js/bird.js`, `js/pipes.js`, `js/explosion.js`, `js/trail.js`, `js/constants.js` (same import change)
+- Modify: `js/game.js`, `js/environment.js`, `js/bird.js`, `js/pipes.js`, `js/explosion.js`, `js/trail.js`, `js/constants.js` (import change)
 - Test: `tests/unit.test.js` (no change needed — unit tests mock THREE)
 
-**Step 1: Update `index.html`**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task1-before.webm
+```
+
+**Step 2: Update `index.html`**
 
 Replace the `<script src="...three.min.js">` with:
 
@@ -58,7 +90,7 @@ Replace the `<script src="...three.min.js">` with:
 
 Keep `<script type="module" src="js/game.js">` as-is.
 
-**Step 2: Update all JS files**
+**Step 3: Update all JS files**
 
 In every `js/*.js` file, replace:
 ```js
@@ -71,17 +103,23 @@ import * as THREE from 'three';
 
 In `js/constants.js`, remove the `const THREE = window.THREE;` line entirely (it doesn't use THREE).
 
-**Step 3: Verify the game still loads**
-
-Run: `node node_modules/@playwright/test/cli.js test tests/record-gameplay.spec.js`
-Expected: PASS (score >= 2), video shows same gameplay as before.
-
 **Step 4: Run unit tests**
 
 Run: `npm run test:unit`
 Expected: All 53 tests pass (unit tests use their own mock, unaffected).
 
-**Step 5: Commit**
+**Step 5: Record AFTER video and compare**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task1-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task1-before.webm` vs `videos/task1-after.webm`:
+- Expected: **No visual difference** — this is a pure refactor. Gameplay, colors, buildings, sun, everything should look identical.
+- If comparison shows differences, something broke in the import migration.
+
+**Step 6: Commit (only after comparison confirms no regressions)**
 
 ```bash
 git add index.html js/*.js
@@ -96,7 +134,14 @@ git commit -m "refactor: migrate Three.js from CDN script tag to import map"
 - Modify: `js/environment.js` — rewrite building creation functions
 - Test: `tests/unit.test.js` — update building tests
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task2-before.webm
+```
+
+**Step 2: Write failing test**
 
 Add test in `tests/unit.test.js` under the environment `describe`:
 
@@ -112,12 +157,12 @@ it('near skyline buildings use BoxGeometry with bevel-like edge meshes', () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 3: Run test to verify it fails**
 
 Run: `npm run test:unit`
 Expected: FAIL — current buildings are plain meshes, not groups with edge children.
 
-**Step 3: Implement beveled buildings**
+**Step 4: Implement beveled buildings**
 
 In `js/environment.js`, create a helper function `createBuilding(w, d, h, mat, edgeMat)` that:
 1. Creates a `THREE.Group`
@@ -131,17 +176,23 @@ Replace `buildingDefs.forEach(...)` to use this helper. Building positions remai
 
 Window meshes stay as-is but increase count to 6 per building and make them slightly larger (0.2 x 0.2).
 
-**Step 4: Run test to verify it passes**
+**Step 5: Run test to verify it passes**
 
 Run: `npm run test:unit`
 Expected: PASS
 
-**Step 5: Visual verify**
+**Step 6: Record AFTER video and compare**
 
-Run: `node node_modules/@playwright/test/cli.js test tests/record-gameplay.spec.js`
-Then: `/verify-video videos/skyline-beveled.webm — check buildings have visible glowing edge lines`
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task2-after.webm
+```
 
-**Step 6: Commit**
+Use `/compare-before-after-with-video` on `videos/task2-before.webm` vs `videos/task2-after.webm`:
+- Expected changes: Buildings should now have **visible glowing cyan/magenta edge lines** (bevels) on their vertical corners. Building bodies should appear darker and more reflective.
+- No regressions: Gameplay still works (score >= 5), sun still visible, grid still present, pipes unchanged.
+
+**Step 7: Commit (only after comparison confirms expected changes)**
 
 ```bash
 git add js/environment.js tests/unit.test.js
@@ -156,7 +207,14 @@ git commit -m "feat: replace building primitives with beveled skyscrapers"
 - Modify: `js/environment.js` — add `createWireframeMountains(scene)`
 - Test: `tests/unit.test.js`
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task3-before.webm
+```
+
+**Step 2: Write failing test**
 
 ```js
 it('has wireframe mountain meshes behind the skyline', () => {
@@ -171,9 +229,9 @@ it('has wireframe mountain meshes behind the skyline', () => {
 });
 ```
 
-**Step 2: Run test — expect FAIL**
+**Step 3: Run test — expect FAIL**
 
-**Step 3: Implement**
+**Step 4: Implement**
 
 Create `createWireframeMountains(scene)`:
 - Use `ConeGeometry(radius, height, segments)` for 5 mountain peaks
@@ -184,11 +242,20 @@ Create `createWireframeMountains(scene)`:
 
 Call from `createEnvironment` after building creation.
 
-**Step 4: Run test — expect PASS**
+**Step 5: Run test — expect PASS**
 
-**Step 5: Visual verify with `/verify-video`**
+**Step 6: Record AFTER video and compare**
 
-**Step 6: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task3-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task3-before.webm` vs `videos/task3-after.webm`:
+- Expected changes: **Wireframe mountain/cone shapes visible in the far background** behind the skyline buildings, near the horizon. Dark purple wireframe color.
+- No regressions: Buildings, sun, grid, gameplay all unchanged.
+
+**Step 7: Commit**
 
 ```bash
 git add js/environment.js tests/unit.test.js
@@ -205,7 +272,14 @@ git commit -m "feat: add wireframe mountain parallax layer behind skyline"
 - Modify: `js/environment.js`
 - Test: `tests/unit.test.js`
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task4-before.webm
+```
+
+**Step 2: Write failing test**
 
 ```js
 it('building body uses MeshStandardMaterial with metalness', () => {
@@ -214,27 +288,37 @@ it('building body uses MeshStandardMaterial with metalness', () => {
   const stdMats = scene.children.filter(c =>
     c.material && c.material.metalness !== undefined && c.material.metalness >= 0.5
   );
-  // At minimum, building bodies should use metallic material
   assert.ok(stdMats.length >= 5, `expected >= 5 metallic meshes, got ${stdMats.length}`);
 });
 ```
 
-**Step 2: Run test — expect FAIL**
+**Step 3: Run test — expect FAIL**
 
 Current buildings use `MeshLambertMaterial` / `MeshBasicMaterial`, no `metalness` property.
 
-**Step 3: Implement**
+**Step 4: Implement**
 
 Update building materials in `createBuilding()`:
 - Body: `MeshStandardMaterial({ color: 0x080015, metalness: 0.7, roughness: 0.3, envMapIntensity: 0.3 })`
 - Windows: Keep `MeshBasicMaterial` but enforce pure neon colors:
-  - Cyan windows: `{ color: 0x00ffff }` (not 0x00ffff with opacity — pure emissive look)
-  - Magenta windows: `{ color: 0xff00ff }` (pure hot pink, not 0xff00aa)
+  - Cyan windows: `{ color: 0x00ffff }` (pure emissive look)
+  - Magenta windows: `{ color: 0xff00ff }` (pure hot pink)
 - Window grid: Instead of random scatter, place windows in a grid pattern on building faces (every 0.5 units vertically, 0.4 units horizontally)
 
-**Step 4: Run test — expect PASS**
+**Step 5: Run test — expect PASS**
 
-**Step 5: Commit**
+**Step 6: Record AFTER video and compare**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task4-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task4-before.webm` vs `videos/task4-after.webm`:
+- Expected changes: Building bodies appear **darker, sleeker, more reflective**. Windows are arranged in a **regular grid pattern** instead of random scatter. Window colors are pure **cyan (#00FFFF) and hot pink (#FF00FF)**.
+- No regressions: Building positions/sizes unchanged, gameplay works, score >= 5.
+
+**Step 7: Commit**
 
 ```bash
 git add js/environment.js tests/unit.test.js
@@ -250,7 +334,14 @@ git commit -m "feat: dark reflective building material with grid windows"
 - Modify: `js/pipes.js` — update pipe colors
 - Test: `tests/unit.test.js`
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task5-before.webm
+```
+
+**Step 2: Write failing test**
 
 ```js
 it('emissive elements use pure cyan 0x00ffff or hot pink 0xff00ff', () => {
@@ -260,14 +351,13 @@ it('emissive elements use pure cyan 0x00ffff or hot pink 0xff00ff', () => {
     .filter(c => c.material && c.material.color)
     .map(c => c.material.color)
     .filter(c => c === 0x00ffff || c === 0xff00ff || c === 0xff00aa || c === 0x00ffff);
-  // Just verify at least some pure neon colors exist
   assert.ok(emissiveColors.length >= 4, 'expected neon-colored emissive meshes');
 });
 ```
 
-**Step 2: Run test — expect FAIL or refine**
+**Step 3: Run test — expect FAIL or refine**
 
-**Step 3: Implement**
+**Step 4: Implement**
 
 Audit and replace all accent colors:
 - `0xff00aa` → `0xff00ff` (pure hot pink everywhere)
@@ -276,9 +366,20 @@ Audit and replace all accent colors:
 - Pipe inner rings: keep `0x00ffff`
 - Grid helper: `new THREE.GridHelper(60, 30, 0xff00ff, 0x330066)`
 
-**Step 4: Run test — expect PASS**
+**Step 5: Run test — expect PASS**
 
-**Step 5: Commit**
+**Step 6: Record AFTER video and compare**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task5-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task5-before.webm` vs `videos/task5-after.webm`:
+- Expected changes: Pink/magenta elements should shift slightly from `#FF00AA` to pure **`#FF00FF`** (hotter pink). Subtle color difference — pipe caps and accent elements should appear slightly more magenta/blue-shifted.
+- No regressions: Gameplay, layout, all elements still present.
+
+**Step 7: Commit**
 
 ```bash
 git add js/environment.js js/pipes.js tests/unit.test.js
@@ -295,7 +396,14 @@ git commit -m "feat: enforce strict cyan/magenta neon color palette"
 - Modify: `js/environment.js`
 - Test: `tests/unit.test.js`
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task6-before.webm
+```
+
+**Step 2: Write failing test**
 
 ```js
 it('ambient light is dark murky purple, no directional light', () => {
@@ -303,7 +411,6 @@ it('ambient light is dark murky purple, no directional light', () => {
   createEnvironment(scene);
   const ambients = scene.children.filter(c => c._type === 'AmbientLight');
   assert.ok(ambients.length >= 1, 'should have ambient light');
-  // No directional lights in the scene
   const dirs = scene.children.filter(c => c._type === 'DirectionalLight');
   assert.equal(dirs.length, 0, 'should have no directional lights');
 });
@@ -311,11 +418,11 @@ it('ambient light is dark murky purple, no directional light', () => {
 
 Note: The mock THREE classes need a `_type` tag. Update the mock `DirectionalLight` and `AmbientLight` constructors to set `_type`.
 
-**Step 2: Run test — expect FAIL**
+**Step 3: Run test — expect FAIL**
 
 Current code adds a `DirectionalLight`.
 
-**Step 3: Implement**
+**Step 4: Implement**
 
 In `createEnvironment(scene)`:
 - Change ambient: `new THREE.AmbientLight(0x0a0015, 0.6)` — darker, more purple
@@ -323,11 +430,20 @@ In `createEnvironment(scene)`:
 - Keep the two point lights (cyan + magenta) — these provide the neon glow on nearby objects
 - Optionally add a dim `HemisphereLight(0x0a0015, 0x000005, 0.3)` for subtle ground-sky gradient
 
-**Step 4: Run test — expect PASS**
+**Step 5: Run test — expect PASS**
 
-**Step 5: Visual verify — buildings should look darker, lit only by point lights**
+**Step 6: Record AFTER video and compare**
 
-**Step 6: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task6-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task6-before.webm` vs `videos/task6-after.webm`:
+- Expected changes: Scene should look **darker overall**. Buildings lit only by point lights (cyan/magenta), no even directional illumination. More dramatic shadows and contrast. Buildings that are far from point lights appear as near-silhouettes.
+- No regressions: Gameplay works, all elements still visible (though darker), score >= 5.
+
+**Step 7: Commit**
 
 ```bash
 git add js/environment.js tests/unit.test.js
@@ -342,7 +458,14 @@ git commit -m "feat: darken ambient light and remove directional light"
 - Modify: `js/environment.js` — replace GridHelper with ShaderMaterial plane
 - Test: `tests/unit.test.js`
 
-**Step 1: Write failing test**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task7-before.webm
+```
+
+**Step 2: Write failing test**
 
 ```js
 it('ground uses ShaderMaterial with scrollable UV offset', () => {
@@ -354,9 +477,9 @@ it('ground uses ShaderMaterial with scrollable UV offset', () => {
 });
 ```
 
-**Step 2: Run test — expect FAIL**
+**Step 3: Run test — expect FAIL**
 
-**Step 3: Implement**
+**Step 4: Implement**
 
 Replace the `GridHelper` + `ground` mesh with a single `PlaneGeometry(60, 60)` using a custom `ShaderMaterial`:
 
@@ -382,17 +505,15 @@ const gridMaterial = new THREE.ShaderMaterial({
     uniform vec3 uBgColor;
     varying vec2 vUv;
     void main() {
-      vec2 uv = vUv * 30.0; // 30 grid cells
-      uv.y += uOffset;      // scroll toward camera
+      vec2 uv = vUv * 30.0;
+      uv.y += uOffset;
       vec2 grid = abs(fract(uv - 0.5) - 0.5) / fwidth(uv);
       float line = min(grid.x, grid.y);
       float mask = 1.0 - min(line, 1.0);
-      // Alternate cyan/magenta based on cell
       vec2 cell = floor(uv);
       float checker = mod(cell.x + cell.y, 2.0);
       vec3 lineColor = mix(uColor1, uColor2, checker * 0.3);
       vec3 color = mix(uBgColor, lineColor, mask * 0.7);
-      // Fade with distance (perspective fade)
       float fade = smoothstep(0.0, 0.4, vUv.y);
       color = mix(uBgColor, color, fade);
       gl_FragColor = vec4(color, 1.0);
@@ -411,11 +532,20 @@ if (envState.gridMaterial && isMoving) {
 
 Remove old `gridHelper` scroll logic.
 
-**Step 4: Run test — expect PASS**
+**Step 5: Run test — expect PASS**
 
-**Step 5: Visual verify — grid should glow and scroll toward camera**
+**Step 6: Record AFTER video and compare**
 
-**Step 6: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task7-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task7-before.webm` vs `videos/task7-after.webm`:
+- Expected changes: Ground floor now has a **glowing neon pink/cyan perspective grid** that **scrolls toward the camera** during gameplay. Lines should appear to glow. Grid fades with distance.
+- No regressions: Buildings, sun, pipes all still present. Gameplay works, score >= 5.
+
+**Step 7: Commit**
 
 ```bash
 git add js/environment.js tests/unit.test.js
@@ -432,9 +562,15 @@ git commit -m "feat: scrolling neon grid floor shader"
 - Modify: `index.html` — add import map entries for postprocessing modules
 - Create: `js/postprocessing.js` — new module that creates and exports the composer
 - Modify: `js/game.js` — use `composer.render()` instead of `renderer.render()`
-- Test: `tests/unit.test.js` — add mock + test for postprocessing module
 
-**Step 1: Update import map in `index.html`**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task8-before.webm
+```
+
+**Step 2: Update import map in `index.html`**
 
 Add to the import map:
 ```json
@@ -455,7 +591,7 @@ Add to the import map:
 
 Note: The unpkg modules import internally from relative paths (`../shaders/CopyShader.js`, etc.) which resolve within unpkg. The import map entry for `'three'` is what they need to resolve their `import { ... } from 'three'` statements.
 
-**Step 2: Create `js/postprocessing.js`**
+**Step 3: Create `js/postprocessing.js`**
 
 ```js
 import * as THREE from 'three';
@@ -483,7 +619,7 @@ export function createPostProcessing(renderer, scene, camera) {
 }
 ```
 
-**Step 3: Integrate into `js/game.js`**
+**Step 4: Integrate into `js/game.js`**
 
 ```js
 import { createPostProcessing } from './postprocessing.js';
@@ -499,22 +635,19 @@ const { composer } = createPostProcessing(renderer, scene, camera);
 //   composer.setSize(window.innerWidth, window.innerHeight);
 ```
 
-**Step 4: Write unit test**
+**Step 5: Record AFTER video and compare**
 
-```js
-it('postprocessing module exports createPostProcessing function', async () => {
-  // Just verify the module structure — actual WebGL testing is E2E
-  const mod = await import('../js/postprocessing.js');
-  assert.equal(typeof mod.createPostProcessing, 'function');
-});
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task8-after.webm
 ```
 
-Note: This test will fail in Node.js because it can't resolve the CDN imports. For unit testing, we skip this and rely on E2E. Add the test as `it.skip` with a comment.
+Use `/compare-before-after-with-video` on `videos/task8-before.webm` vs `videos/task8-after.webm`:
+- Expected changes: Bright cyan/magenta elements should now have a visible **bloom/glow effect** — light bleeds outward from neon-colored surfaces into the surrounding dark. The entire scene should feel more "neon."
+- No regressions: All geometry still visible, gameplay works, score >= 5. If the screen is blank/white, bloom setup is broken.
 
-**Step 5: E2E verify**
-
-Run: `node node_modules/@playwright/test/cli.js test tests/record-gameplay.spec.js`
-Then: `/verify-video — check if bright cyan/magenta elements have a visible glow/bloom effect bleeding into surrounding dark areas`
+Use `/verify-video` on `videos/task8-after.webm` if needed to confirm bloom is visible:
+- Check: "Do bright cyan and magenta elements have a visible glow/halo bleeding into surrounding dark areas?"
 
 **Step 6: Commit**
 
@@ -530,7 +663,14 @@ git commit -m "feat: add bloom post-processing via UnrealBloomPass"
 **Files:**
 - Modify: `js/postprocessing.js` — add color grading ShaderPass
 
-**Step 1: Implement color grading shader**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task9-before.webm
+```
+
+**Step 2: Implement color grading shader**
 
 Add to `createPostProcessing()` after bloom:
 
@@ -556,11 +696,8 @@ const ColorGradeShader = {
     void main() {
       vec4 tex = texture2D(tDiffuse, vUv);
       vec3 c = tex.rgb;
-      // Crush shadows
       c = max(c - shadowCrush, 0.0) / (1.0 - shadowCrush);
-      // Boost contrast
       c = (c - 0.5) * contrast + 0.5;
-      // Push midtones toward magenta
       float lum = dot(c, vec3(0.299, 0.587, 0.114));
       float midMask = smoothstep(0.0, 0.5, lum) * smoothstep(1.0, 0.5, lum);
       c.r += magentaPush * midMask;
@@ -573,9 +710,18 @@ const gradePass = new ShaderPass(ColorGradeShader);
 composer.addPass(gradePass);
 ```
 
-**Step 2: E2E verify — colors should appear more contrasty with magenta tint**
+**Step 3: Record AFTER video and compare**
 
-**Step 3: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task9-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task9-before.webm` vs `videos/task9-after.webm`:
+- Expected changes: **Deeper shadows** (dark areas become darker/crushed), **higher contrast**, and a subtle **magenta/purple tint** in midtones. Overall color palette should feel warmer and more stylized.
+- No regressions: All elements visible, gameplay works. If scene is too dark to play, reduce `shadowCrush` or `contrast`.
+
+**Step 4: Commit**
 
 ```bash
 git add js/postprocessing.js
@@ -589,7 +735,14 @@ git commit -m "feat: add color grading pass (shadow crush + magenta midtones)"
 **Files:**
 - Modify: `js/postprocessing.js`
 
-**Step 1: Implement**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task10-before.webm
+```
+
+**Step 2: Implement**
 
 ```js
 import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
@@ -601,9 +754,18 @@ vignettePass.uniforms['darkness'].value = 1.4;
 composer.addPass(vignettePass);
 ```
 
-**Step 2: E2E verify — edges of screen should be noticeably darker**
+**Step 3: Record AFTER video and compare**
 
-**Step 3: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task10-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task10-before.webm` vs `videos/task10-after.webm`:
+- Expected changes: **Edges/corners of the screen are noticeably darker** than the center, creating a spotlight/tunnel effect that draws the eye to the gameplay area.
+- No regressions: Center gameplay area still clearly visible, gameplay works.
+
+**Step 4: Commit**
 
 ```bash
 git add js/postprocessing.js
@@ -617,8 +779,16 @@ git commit -m "feat: add vignette post-processing pass"
 **Files:**
 - Modify: `js/postprocessing.js`
 - Modify: `js/game.js` — pass time to film shader
+- Modify: `index.html` — remove CSS scanlines (shader replaces them)
 
-**Step 1: Implement film grain**
+**Step 1: Record BEFORE video**
+
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task11-before.webm
+```
+
+**Step 2: Implement film grain**
 
 ```js
 import { FilmShader } from 'three/examples/jsm/shaders/FilmShader.js';
@@ -627,18 +797,14 @@ import { FilmShader } from 'three/examples/jsm/shaders/FilmShader.js';
 const filmPass = new ShaderPass(FilmShader);
 filmPass.uniforms['nIntensity'].value = 0.25;  // subtle grain
 filmPass.uniforms['sIntensity'].value = 0.04;  // faint scanlines
-filmPass.uniforms['sCount'].value = 800;        // scanline density
-filmPass.uniforms['grayscale'].value = 0;        // keep color
+filmPass.uniforms['sCount'].value = 800;
+filmPass.uniforms['grayscale'].value = 0;
 composer.addPass(filmPass);
 ```
 
 Export `filmPass` so `game.js` can update `filmPass.uniforms['time'].value = now * 0.001` each frame.
 
-Note: `index.html` already has CSS scanlines (`body::after`). We should remove the CSS scanlines since the FilmShader now handles them — or keep both for a stronger effect. Recommend: remove CSS scanlines, let the shader handle it.
-
-**Step 2: Add chromatic aberration**
-
-Create a simple custom shader for chromatic aberration:
+**Step 3: Add chromatic aberration**
 
 ```js
 const ChromaticAberrationShader = {
@@ -667,20 +833,32 @@ const chromaPass = new ShaderPass(ChromaticAberrationShader);
 composer.addPass(chromaPass);
 ```
 
-**Step 3: Update `js/game.js` loop**
+**Step 4: Update `js/game.js` loop**
 
 ```js
 // After composer.render():
 if (filmPass) filmPass.uniforms['time'].value = now * 0.001;
 ```
 
-**Step 4: Remove CSS scanlines from `index.html`**
+**Step 5: Remove CSS scanlines from `index.html`**
 
 Delete the `body::after` CSS block (the FilmShader replaces it).
 
-**Step 5: E2E verify — subtle grain, faint scanlines, slight color fringing at edges**
+**Step 6: Record AFTER video and compare**
 
-**Step 6: Commit**
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/task11-after.webm
+```
+
+Use `/compare-before-after-with-video` on `videos/task11-before.webm` vs `videos/task11-after.webm`:
+- Expected changes: **Subtle film grain/noise** visible over the entire scene (animated, not static). **Faint horizontal scanlines** (replacing the CSS version). **Slight color fringing** at screen edges (chromatic aberration — red/blue split).
+- No regressions: Scene still readable, gameplay works. If grain is too heavy or scanlines too dominant, tune `nIntensity`/`sIntensity`.
+
+Use `/verify-video` on `videos/task11-after.webm` for final retro-feel check:
+- "Does the scene have visible film grain noise, faint scanlines, and subtle color splitting at the edges?"
+
+**Step 7: Commit**
 
 ```bash
 git add js/postprocessing.js js/game.js index.html
@@ -698,17 +876,24 @@ git commit -m "feat: add film grain, scanlines, and chromatic aberration"
 Run: `npm run test:unit`
 Expected: All tests pass.
 
-**Step 2: Run gameplay test**
+**Step 2: Run high-score gameplay test**
 
 Run: `node node_modules/@playwright/test/cli.js test tests/high-score.spec.js`
 Expected: Score >= 5.
 
 **Step 3: Record final video**
 
-Run: `node node_modules/@playwright/test/cli.js test tests/record-gameplay.spec.js`
-Copy video to `videos/synthwave-final.webm`.
+```bash
+node node_modules/@playwright/test/cli.js test tests/high-score.spec.js
+cp test-results/high-score-Record-high-score-gameplay-navigate-5-pipes/video.webm videos/synthwave-final.webm
+```
 
-**Step 4: Verify with Gemini**
+**Step 4: Full before/after comparison**
+
+Use `/compare-before-after-with-video` on `videos/task1-before.webm` (the original, pre-overhaul) vs `videos/synthwave-final.webm`:
+- This is the big-picture comparison. Describe ALL visual differences between the original and the final synthwave version.
+
+**Step 5: Verify final aesthetics with Gemini**
 
 Use `/verify-video videos/synthwave-final.webm` with these checks:
 1. Buildings have visible glowing cyan/magenta edge lines (bevels)
@@ -720,7 +905,7 @@ Use `/verify-video videos/synthwave-final.webm` with these checks:
 7. Wireframe mountains visible in far background below sun
 8. Overall aesthetic reads as "synthwave / retrowave / outrun"
 
-**Step 5: Save golden recording**
+**Step 6: Save golden recording**
 
 ```bash
 cp videos/synthwave-final.webm golden/synthwave-overhaul.webm
@@ -728,7 +913,7 @@ git add golden/synthwave-overhaul.webm
 git commit -m "chore: add synthwave overhaul golden recording"
 ```
 
-**Step 6: Update `CLAUDE.md` and `HANDOFF.md`**
+**Step 7: Update `CLAUDE.md` and `HANDOFF.md`**
 
 Document new post-processing pipeline, import map setup, and updated file structure.
 
