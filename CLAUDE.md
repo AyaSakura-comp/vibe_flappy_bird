@@ -1,43 +1,53 @@
 # CYBER FLAP — 3D Flappy Bird
 
-A cyberpunk-themed Flappy Bird clone built with Three.js (r128 via CDN).
+A high-intensity, synthwave-themed 3D Flappy Bird clone built with Three.js (r128).
 
 ## Project Structure
 
 ```
-index.html          — HTML/CSS only (title screen, score HUD, overlays)
+index.html          — HTML/CSS UI + Three.js Import Map
 js/
-  constants.js      — Game tuning: GRAVITY, FLAP, PIPE_GAP, PIPE_SPEED, PIPE_REMOVE_Z, etc.
+  constants.js      — Centralized CONFIG: Physics, Pipes, Visuals, and Colors
   collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin)
-  explosion.js      — Particle system: spawnExplosion(), updateExplosion(), clearParticles()
+  explosion.js      — Particle system: spawnExplosion(), updateExplosion()
   bird.js           — createBird(scene) → { birdGroup, eng }
-  pipes.js          — makePipeSegment(), spawnPipe(), prefillPipes(), resetPipes(), pipes array
-  trail.js          — Neon data trail: createTrail(), updateTrail(), resetTrail()
-  environment.js    — Ground, grid, skyline, lighting → { cyanLight, magentaLight }
-  postprocessing.js — EffectComposer stack: Bloom, Color Grading, Vignette, Film Grain
-  game.js           — Main orchestrator: state, input, game loop, window.__FLAPPY_* test API
+  pipes.js          — Pipe management: spawning, recycling, pattern generation
+  trail.js          — Neon data trail trailing the bird
+  environment.js    — World: Grid floor shader, Skyscrapers, Retro Sun, Digital Rain, Mountains
+  postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration
+  game.js           — Main orchestrator: Game loop, State management, Input, Test API
 tests/
   unit.test.js      — 53 unit tests (node:test) covering all modules
-  flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright, flaky)
-  collision.spec.js — Collision test: bird dies on cap contact (Playwright)
-  golden.spec.js    — Golden test: navigate 4+ pipes, crash, verify SYSTEM FAILURE
-  record-gameplay.spec.js — Record gameplay video with AI bot (score >= 2)
+  flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
+  collision.spec.js — Collision test: bird dies on cap contact
+  golden.spec.js    — Golden test: verify SYSTEM FAILURE state
+  record-gameplay.spec.js — Visual verification: record gameplay video
 docs/plans/         — Design and implementation plan documents
 golden/
-  before-refactor.webm  — Reference video from pre-module extraction
-  after-refactor.webm   — Reference video after module extraction
-playwright.config.js    — Playwright config: 720×1280 viewport, video on, port 3457
+  synthwave-overhaul.webm — Reference video for the 2026-02-25 visual update
+  high-score-5plus.webm   — Reference video for high-intensity physics gameplay
 package.json
 ```
 
-## Architecture
+## Architecture & Design
 
-- ES modules (`<script type="module">`) — no bundler
-- Three.js loaded via an **import map** in `index.html` pointing to unpkg (r128), accessed via `import * as THREE from 'three'`
-- Post-processing stack (Bloom, Color Grading, Vignette, Film Grain) handled in `js/postprocessing.js` using `EffectComposer`
-- `game.js` imports all modules and orchestrates the game loop
-- Test API exposed on `window.__FLAPPY_*` (BIRD_Y, SCORE, STARTED, OVER, NEXT_GAP_Y/TOP/BOT)
-- Local `three` mock package located in `node_modules/three` allows Node.js unit tests to resolve ES module imports
+- **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
+- **Centralized Config**: All game tuning (Gravity, Speed, Colors, Bloom) is managed in `js/constants.js` via the `CONFIG` object.
+- **High-Intensity Physics**: Tuned for a fast, arcade feel (Gravity: 0.019, Pipe Speed: 0.16).
+- **Visual Identity (Synthwave)**:
+  - **UI**: Cyberpunk-themed overlays with glow effects.
+    - Start: `CYBER FLAP` — `[ CLICK OR SPACE TO JACK IN ]`
+    - Game Over: `SYSTEM FAILURE` — `// CLICK TO REBOOT`
+  - **Environment**: Multi-layered parallax world.
+    - **Foreground**: Scrolling GLSL neon grid floor (Magenta/Cyan).
+    - **Midground**: Skyscrapers with neon window grids and beveled glowing edges.
+    - **Background**: Sliced retro sun (Orange/Red), wireframe mountains, and digital rain particles.
+  - **Post-Processing**: Heavy stack for "CRT/VHS" aesthetic.
+    - High-intensity **Bloom** (neon glow).
+    - **Color Grading**: Crushed shadows with magenta midtone pushes.
+    - **VHS Effects**: Film grain, visible scanlines, and subtle chromatic aberration on edges.
+- **Aspect-Aware Rendering**: FOV and layout are dynamically adjusted to maintain consistent gameplay across 9:16 (mobile) and 16:9 (desktop) viewports.
+- **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
 
 ## Running
 
@@ -45,38 +55,13 @@ package.json
 # Serve locally
 node node_modules/http-server/bin/http-server . -p 1124 --cors -c-1
 
-# Run tests (no bin links — invoke directly)
+# Run tests
 node node_modules/@playwright/test/cli.js test
 ```
 
 ## Test Notes
 
-- `flappy.spec.js` uses an adaptive AI that flaps toward `__FLAPPY_NEXT_GAP_Y`; can be flaky under resource contention
-- Tests require Playwright browsers installed (`npx playwright install`)
-- Videos are recorded automatically by Playwright config
-- `record-gameplay.spec.js` is the most reliable E2E test (score >= 2); use it for video verification
-- Unit tests: `npm run test:unit` (53 tests, all modules)
-
-## Camera & Environment
-
-- Camera at 45-degree over-the-shoulder angle: position `(15, 5, 15)` looking at origin
-- Buildings positioned at z=-16 to -22 with 3D depth (2-3.5 units) for visibility from angled camera
-- Ground/grid at z=-10, sized 60x60
-- Pipes removed at `PIPE_REMOVE_Z=15` (past the camera) so they persist after the bird passes
-- Bird trail spreads in +Z direction (toward camera) to appear behind the bird
-
-## Automated High-Score Recording
-
-A high-score E2E test is available for automated gameplay recording and visual verification.
-
-- **Test File:** `tests/high-score.spec.js`
-- **Controller:** Zero-latency in-browser pilot injected via `addInitScript`. Uses an absolute-ceiling strategy:
-  - Aims for the bottom quarter of the gap (`gapBot + 1.5`) to pre-position for downward transitions
-  - Only flaps when falling (`vel > 0.01`) to prevent double-flaps
-  - Enforces an absolute ceiling of 1.25 — the peak after any flap (`birdY + 2.8`) must stay below this to survive worst-case gap transitions (+2 → -2 in `PIPE_Y_PATTERN`)
-- **Run command:** `node node_modules/@playwright/test/cli.js test tests/high-score.spec.js`
-- **Goal:** Navigates >= 5 pipes (typically scores 6–13+). Video captured in `test-results/`.
-- **Golden recording:** `golden/high-score-5plus.webm` (score 13)
-- **Port:** Uses port 3457 (configured in `playwright.config.js` webServer)
-- **Requirements:** Requires the `window.__FLAPPY_*` test API exposed in `js/game.js`.
+- **Automated High-Score**: `tests/high-score.spec.js` uses a zero-latency in-browser pilot to record high-score gameplay.
+- **Unit Tests**: `npm run test:unit` runs 53 tests using a local Three.js mock.
+- **Videos**: Playwright is configured to record videos of all E2E test runs for visual verification.
 

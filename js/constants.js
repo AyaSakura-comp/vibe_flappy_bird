@@ -1,8 +1,8 @@
 // ─── SOURCE OF TRUTH ───
 export const CONFIG = {
   PHYSICS: {
-    GRAVITY: 0.007,
-    FLAP: -0.17,
+    GRAVITY: 0.019,
+    FLAP: -0.25,
     TERMINAL_VELOCITY: 0.5
   },
   PIPES: {
