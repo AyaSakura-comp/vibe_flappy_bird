@@ -20,7 +20,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-const { composer } = createPostProcessing(renderer, scene, camera);
+const { composer, filmPass } = createPostProcessing(renderer, scene, camera);
 
 // ── Environment ──────────────────────────────────────────────────────────
 const { cyanLight, magentaLight, envState } = createEnvironment(scene);
@@ -186,6 +186,7 @@ function loop(now) {
     camera.position.set(15, 5, 15);
   }
 
+  if (filmPass) filmPass.uniforms['time'].value = now * 0.001;
   composer.render();
 }
 

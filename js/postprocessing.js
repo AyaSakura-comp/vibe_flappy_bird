@@ -4,6 +4,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
+import { FilmShader } from 'three/examples/jsm/shaders/FilmShader.js';
 
 export function createPostProcessing(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
@@ -60,5 +61,39 @@ export function createPostProcessing(renderer, scene, camera) {
   vignettePass.uniforms['darkness'].value = 1.4;
   composer.addPass(vignettePass);
 
-  return { composer, bloomPass };
+  // 5. Film grain + scanlines
+  const filmPass = new ShaderPass(FilmShader);
+  filmPass.uniforms['nIntensity'].value = 0.25;  // subtle grain
+  filmPass.uniforms['sIntensity'].value = 0.04;  // faint scanlines
+  filmPass.uniforms['sCount'].value = 800;
+  filmPass.uniforms['grayscale'].value = 0;
+  composer.addPass(filmPass);
+
+  // 6. Chromatic aberration
+  const ChromaticAberrationShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      amount: { value: 0.003 },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform float amount;
+      varying vec2 vUv;
+      void main() {
+        vec2 offset = (vUv - 0.5) * amount;
+        float r = texture2D(tDiffuse, vUv + offset).r;
+        float g = texture2D(tDiffuse, vUv).g;
+        float b = texture2D(tDiffuse, vUv - offset).b;
+        gl_FragColor = vec4(r, g, b, 1.0);
+      }
+    `,
+  };
+  const chromaPass = new ShaderPass(ChromaticAberrationShader);
+  composer.addPass(chromaPass);
+
+  return { composer, bloomPass, filmPass };
 }
