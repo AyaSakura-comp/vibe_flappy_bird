@@ -122,7 +122,7 @@ function createWireframeMountains(scene) {
 
 export function createEnvironment(scene) {
   // Lighting
-  scene.add(new THREE.AmbientLight(0x110022, 1.0));
+  scene.add(new THREE.AmbientLight(0x0a0015, 0.6));
 
   // Add linear fog matching sky color exactly
   scene.fog = new THREE.Fog(0x1a0044, 20, 80);
@@ -134,11 +134,6 @@ export function createEnvironment(scene) {
   const magentaLight = new THREE.PointLight(0xff00ff, 1.2, 30);
   magentaLight.position.set(3, -2, 4);
   scene.add(magentaLight);
-
-  // Directional light from camera side to illuminate building faces
-  const dirLight = new THREE.DirectionalLight(0x220044, 0.8);
-  dirLight.position.set(15, 5, 15);
-  scene.add(dirLight);
 
   createGradientBackground(scene);
   createRetroSun(scene);

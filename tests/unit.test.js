@@ -89,10 +89,10 @@ globalThis.window = {
       constructor(opts) { Object.assign(this, mockMaterial(opts)); }
     },
     AmbientLight: class {
-      constructor() { this.position = mockVec3(); }
+      constructor() { this.position = mockVec3(); this._type = 'AmbientLight'; }
     },
     DirectionalLight: class {
-      constructor() { this.position = mockVec3(); }
+      constructor() { this.position = mockVec3(); this._type = 'DirectionalLight'; }
     },
     PointLight: class {
       constructor(c, i, d) {
@@ -374,6 +374,15 @@ describe('createEnvironment', () => {
     });
     emissiveColors = emissiveColors.filter(c => c === 0x00ffff || c === 0xff00ff);
     assert.ok(emissiveColors.length >= 4, 'expected neon-colored emissive meshes');
+  });
+
+  it('ambient light is dark murky purple, no directional light', () => {
+    const scene = mockScene();
+    createEnvironment(scene);
+    const ambients = scene.children.filter(c => c._type === 'AmbientLight');
+    assert.ok(ambients.length >= 1, 'should have ambient light');
+    const dirs = scene.children.filter(c => c._type === 'DirectionalLight');
+    assert.equal(dirs.length, 0, 'should have no directional lights');
   });
 
   it('has wireframe mountain meshes behind the skyline', () => {
