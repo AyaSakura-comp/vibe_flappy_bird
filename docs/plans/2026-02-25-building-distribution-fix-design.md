@@ -14,7 +14,7 @@ ENVIRONMENT: {
   PARALLAX_SPEED: 0.025,
   CITY: {
     WRAP_Z: 15.0,
-    WRAP_DISTANCE: 40.0, // Reduced from 60 to fix empty gaps
+    WRAP_DISTANCE: 30.0, // Reduced from 60 to fix empty gaps
     BUILDINGS: [ ... ],
     DISTANT_BUILDINGS: [ ... ]
   }

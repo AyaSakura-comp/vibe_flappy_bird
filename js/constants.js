@@ -51,7 +51,7 @@ export const CONFIG = {
     PARALLAX_SPEED: 0.025,
     CITY: {
       WRAP_Z: 15.0,
-      WRAP_DISTANCE: 40.0, // Reduced from 60 to fix empty gaps
+      WRAP_DISTANCE: 30.0, // Reduced from 60 to fix empty gaps
       BUILDINGS: [
         { x: -18, w: 2.0, d: 2.0, h: 10, z:  -8 },
         { x: -19, w: 1.8, d: 1.8, h: 14, z: -12 },
