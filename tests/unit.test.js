@@ -660,3 +660,61 @@ describe('trail', () => {
     assert.equal(posArr[4], 0); // y of second point
   });
 });
+
+// ── audio.js ──────────────────────────────────────────────────────────
+describe('audio', () => {
+  // Mock document.createElement to return a fake audio element
+  const origCreateElement = globalThis.document.createElement;
+
+  beforeEach(() => {
+    globalThis.document.createElement = (tag) => {
+      if (tag === 'audio') {
+        return {
+          src: '',
+          loop: false,
+          volume: 1,
+          _playing: false,
+          play() { this._playing = true; return Promise.resolve(); },
+          pause() { this._playing = false; },
+        };
+      }
+      return origCreateElement(tag);
+    };
+  });
+
+  it('createAudio returns element with correct src, loop, and volume', async () => {
+    const { createAudio } = await import('../js/audio.js');
+    const audio = createAudio();
+    assert.equal(audio.src, 'sounds/Neon_Velocity.mp3');
+    assert.equal(audio.loop, true);
+    assert.equal(audio.volume, 0.6);
+  });
+
+  it('playBgm calls play on the audio element', async () => {
+    const { createAudio, playBgm } = await import('../js/audio.js');
+    const audio = createAudio();
+    assert.equal(audio._playing, false);
+    playBgm(audio);
+    assert.equal(audio._playing, true);
+  });
+
+  it('pauseBgm calls pause on the audio element', async () => {
+    const { createAudio, playBgm, pauseBgm } = await import('../js/audio.js');
+    const audio = createAudio();
+    playBgm(audio);
+    assert.equal(audio._playing, true);
+    pauseBgm(audio);
+    assert.equal(audio._playing, false);
+  });
+
+  it('playBgm after pauseBgm resumes (does not reset)', async () => {
+    const { createAudio, playBgm, pauseBgm } = await import('../js/audio.js');
+    const audio = createAudio();
+    audio.currentTime = 42;
+    playBgm(audio);
+    pauseBgm(audio);
+    playBgm(audio);
+    assert.equal(audio.currentTime, 42, 'currentTime should not be reset');
+    assert.equal(audio._playing, true);
+  });
+});
