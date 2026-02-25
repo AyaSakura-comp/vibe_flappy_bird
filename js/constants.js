@@ -23,8 +23,8 @@ export const CONFIG = {
       EXPLOSION: [0x00ffff, 0xff00ff, 0xffffff, 0xff6600, 0xffff00]
     },
     BLOOM: {
-      STRENGTH: 0.8,
-      RADIUS: 0.4,
+      STRENGTH: 1.4,
+      RADIUS: 1.2,
       THRESHOLD: 0.3
     },
     POST_PROCESSING: {
