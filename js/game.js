@@ -11,6 +11,9 @@ import { checkCollision } from './collision.js';
 import { createTrail, updateTrail, resetTrail } from './trail.js';
 import { createPostProcessing } from './postprocessing.js';
 import * as THREE from 'three';
+import { createAudio, playBgm, pauseBgm } from './audio.js';
+
+const audio = createAudio();
 
 // ── Scene setup ──────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -58,6 +61,7 @@ function handleInput() {
     started = true;
     lastSpawn = performance.now();
     overlayEl.classList.add('hidden');
+    playBgm(audio);
   }
   velocity = FLAP;
 }
@@ -104,6 +108,7 @@ updateCameraProjection();
 // ── Game over / restart ──────────────────────────────────────────────────
 function triggerGameOver() {
   gameOver = true;
+  pauseBgm(audio);
   shakeAmp = SHAKE_INIT;
   spawnExplosion(
     scene,
@@ -135,6 +140,7 @@ function restartGame() {
   prefillPipes(scene);
   lastSpawn = performance.now();
   prevTime = performance.now();
+  playBgm(audio);
 }
 
 // ── Animation loop ───────────────────────────────────────────────────────

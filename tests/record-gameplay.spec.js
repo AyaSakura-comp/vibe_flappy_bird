@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 test('Record gameplay: play more than 2 levels (score >= 3)', async ({ page }) => {
   test.setTimeout(120000);
-  await page.goto('http://localhost:3456/index.html');
+  await page.goto('http://localhost:3457/index.html');
 
   // Wait for canvas and Three.js scene to initialize
   await page.waitForSelector('canvas', { timeout: 10000 });
