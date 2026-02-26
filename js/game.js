@@ -194,6 +194,7 @@ document.addEventListener('touchcancel', (e) => {
   if (!rightSideStillHeld) setPhasing(false);
 }, { passive: false });
 
+/*
 // Mouse — split screen: left = flap, right = phase
 document.addEventListener('mousedown', (e) => {
   // Suppress synthetic mouse events on mobile
@@ -212,6 +213,7 @@ document.addEventListener('mouseup', (e) => {
   const xRatio = e.clientX / window.innerWidth;
   if (xRatio >= 0.5) setPhasing(false);
 });
+*/
 
 function updateCameraProjection() {
   const aspect = window.innerWidth / window.innerHeight;
