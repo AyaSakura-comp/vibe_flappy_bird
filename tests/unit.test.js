@@ -643,6 +643,32 @@ describe('pipes', () => {
     pipesMod.spawnPipe(scene);
     assert.equal(pipesMod.pipes[0].scored, false);
   });
+
+  it('spawnPipe attaches laser to pipe when shouldSpawn returns true', () => {
+    const scene = mockScene();
+    pipesMod.resetPipes(scene);
+    const origWarmup = CONFIG.LASER.WARMUP_PIPES;
+    const origChance = CONFIG.LASER.SPAWN_CHANCE;
+    CONFIG.LASER.WARMUP_PIPES = 0;
+    CONFIG.LASER.SPAWN_CHANCE = 1.0;
+    pipesMod.spawnPipe(scene, -18, 0);
+    const p = pipesMod.pipes[0];
+    assert.ok(p.laser, 'pipe should have a laser when spawn chance is 1.0');
+    assert.ok(typeof p.laser.hitTop === 'number');
+    assert.ok(typeof p.laser.hitBot === 'number');
+    CONFIG.LASER.WARMUP_PIPES = origWarmup;
+    CONFIG.LASER.SPAWN_CHANCE = origChance;
+  });
+
+  it('spawnPipe does NOT attach laser during warmup', () => {
+    const scene = mockScene();
+    pipesMod.resetPipes(scene);
+    CONFIG.LASER.SPAWN_CHANCE = 1.0;
+    pipesMod.spawnPipe(scene, -18, 0); // pipeCount=0, warmup=5
+    const p = pipesMod.pipes[0];
+    assert.equal(p.laser, null, 'no laser during warmup');
+    CONFIG.LASER.SPAWN_CHANCE = 0.35;
+  });
 });
 
 // ── trail.js ──────────────────────────────────────────────────────────

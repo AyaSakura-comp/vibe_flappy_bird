@@ -14,11 +14,11 @@ export function createLaserNet(gapTop, gapBot) {
   const hitTop = gapCenter + laserHeight / 2;
   const hitBot = gapCenter - laserHeight / 2;
 
-  // Animated plane spanning the pipe width (diameter = 2.0)
-  const geo = new THREE.PlaneGeometry(2.0, laserHeight);
+  // Laser net: thin box spanning pipe diameter — solid and visible from any angle
+  // Box depth 0.1 gives it 3D presence; width 2.0 matches pipe diameter
+  const geo = new THREE.BoxGeometry(2.0, laserHeight, 0.1);
   const mat = new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
+    transparent: false,
     uniforms: {
       uTime: { value: 0 },
       uColor1: { value: new THREE.Color(0xff2200) },
@@ -26,8 +26,10 @@ export function createLaserNet(gapTop, gapBot) {
     },
     vertexShader: `
       varying vec2 vUv;
+      varying vec3 vNormal;
       void main() {
         vUv = uv;
+        vNormal = normal;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -37,19 +39,16 @@ export function createLaserNet(gapTop, gapBot) {
       uniform vec3 uColor2;
       varying vec2 vUv;
       void main() {
-        float scanline = sin(vUv.y * 40.0 + uTime * 8.0) * 0.5 + 0.5;
-        float pulse = sin(uTime * 4.0) * 0.3 + 0.7;
+        float scanline = sin(vUv.y * 8.0 + uTime * 5.0) * 0.5 + 0.5;
+        float pulse = sin(uTime * 3.0) * 0.25 + 0.75;
         vec3 col = mix(uColor1, uColor2, scanline) * pulse;
-        float edgeFade = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.9, vUv.x);
-        gl_FragColor = vec4(col, (0.7 + scanline * 0.3) * edgeFade * pulse);
+        gl_FragColor = vec4(col, 1.0);
       }
     `,
   });
 
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.y = gapCenter;
-  // Rotate to face the angled camera (camera is at x=15, z=15 looking at origin)
-  mesh.lookAt(15, gapCenter, 15);
   mesh.frustumCulled = false;
 
   return { mesh, hitTop, hitBot };

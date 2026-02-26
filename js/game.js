@@ -8,6 +8,7 @@ import { createEnvironment, updateEnvironment } from './environment.js';
 import { pipes, spawnPipe, prefillPipes, resetPipes, pipeCount } from './pipes.js';
 import { spawnExplosion, updateExplosion, clearParticles } from './explosion.js';
 import { checkCollision } from './collision.js';
+import { checkLaserCollision, updateLaserShader } from './laser.js';
 import { createTrail, updateTrail, resetTrail } from './trail.js';
 import { createPostProcessing } from './postprocessing.js';
 import * as THREE from 'three';
@@ -162,11 +163,12 @@ function loop(now) {
     // Allow test override of pipe speed via window.__GAME_CONFIG mutation
     const pipeSpeed = CONFIG.PIPES.SPEED;
     const spawnMs   = Math.round(CONFIG.PIPES.SPACING / (pipeSpeed * 60) * 1000);
-    if (now - lastSpawn >= spawnMs) { spawnPipe(scene); lastSpawn = now; }
+    if (now - lastSpawn >= spawnMs) { spawnPipe(scene, undefined, score); lastSpawn = now; }
 
     for (let i = pipes.length - 1; i >= 0; i--) {
       const p = pipes[i];
       p.group.position.z += pipeSpeed * dt;
+      if (p.laser) updateLaserShader(p.laser.mesh, now * 0.001);
 
       if (!p.scored && p.group.position.z > 1) {
         p.scored = true;
@@ -212,6 +214,7 @@ function loop(now) {
   window.__FLAPPY_NEXT2_GAP_TOP = _np2 ? _np2.gapTop : 0;
   window.__FLAPPY_NEXT2_GAP_BOT = _np2 ? _np2.gapBot : 0;
   window.__FLAPPY_NEXT2_PIPE_Z  = _np2 ? _np2.group.position.z : -99;
+  window.__FLAPPY_NEXT_LASER   = _np && _np.laser ? true : false;
   window.__FLAPPY_SHAKE_AMP    = shakeAmp;
 
   // Screen shake — sine wave at ~8Hz so it's visible in compressed video

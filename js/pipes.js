@@ -1,5 +1,6 @@
 import { PIPE_GAP, PIPE_Y_PATTERN, PIPE_SPACING, PIPE_SPAWN_Z } from './constants.js';
 import * as THREE from 'three';
+import { createLaserNet, shouldSpawnLaser } from './laser.js';
 
 export const pipes = [];
 export let pipeCount = 0;
@@ -30,8 +31,9 @@ export function makePipeSegment(height) {
   return { group, cap, inner };
 }
 
-export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z) {
+export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z, score = 0) {
   const yOffset = PIPE_Y_PATTERN[pipeCount % 5];
+  const currentPipeIndex = pipeCount;
   pipeCount++;
   const gapTop  = yOffset + PIPE_GAP / 2;
   const gapBot  = yOffset - PIPE_GAP / 2;
@@ -55,7 +57,14 @@ export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z) {
   botInner.position.y = botHeight / 2;
   pipeGroup.add(botGroup);
 
-  pipes.push({ group: pipeGroup, gapTop, gapBot, scored: false });
+  let laser = null;
+  if (shouldSpawnLaser(currentPipeIndex, score)) {
+    const laserData = createLaserNet(gapTop, gapBot);
+    pipeGroup.add(laserData.mesh);
+    laser = laserData;
+  }
+
+  pipes.push({ group: pipeGroup, gapTop, gapBot, scored: false, laser });
 }
 
 export function prefillPipes(scene) {
