@@ -649,25 +649,38 @@ describe('pipes', () => {
     pipesMod.resetPipes(scene);
     const origWarmup = CONFIG.LASER.WARMUP_PIPES;
     const origChance = CONFIG.LASER.SPAWN_CHANCE;
+    const origMax = CONFIG.LASER.MAX_CHANCE;
     CONFIG.LASER.WARMUP_PIPES = 0;
     CONFIG.LASER.SPAWN_CHANCE = 1.0;
-    pipesMod.spawnPipe(scene, -18, 0);
-    const p = pipesMod.pipes[0];
-    assert.ok(p.laser, 'pipe should have a laser when spawn chance is 1.0');
-    assert.ok(typeof p.laser.hitTop === 'number');
-    assert.ok(typeof p.laser.hitBot === 'number');
-    CONFIG.LASER.WARMUP_PIPES = origWarmup;
-    CONFIG.LASER.SPAWN_CHANCE = origChance;
+    CONFIG.LASER.MAX_CHANCE = 1.0;
+    try {
+      pipesMod.spawnPipe(scene, -18, 0);
+      const p = pipesMod.pipes[0];
+      assert.ok(p.laser, 'pipe should have a laser when spawn chance is 1.0');
+      assert.ok(typeof p.laser.hitTop === 'number');
+      assert.ok(typeof p.laser.hitBot === 'number');
+    } finally {
+      CONFIG.LASER.WARMUP_PIPES = origWarmup;
+      CONFIG.LASER.SPAWN_CHANCE = origChance;
+      CONFIG.LASER.MAX_CHANCE = origMax;
+    }
   });
 
   it('spawnPipe does NOT attach laser during warmup', () => {
     const scene = mockScene();
     pipesMod.resetPipes(scene);
+    const origChance = CONFIG.LASER.SPAWN_CHANCE;
+    const origMax = CONFIG.LASER.MAX_CHANCE;
     CONFIG.LASER.SPAWN_CHANCE = 1.0;
-    pipesMod.spawnPipe(scene, -18, 0); // pipeCount=0, warmup=5
-    const p = pipesMod.pipes[0];
-    assert.equal(p.laser, null, 'no laser during warmup');
-    CONFIG.LASER.SPAWN_CHANCE = 0.35;
+    CONFIG.LASER.MAX_CHANCE = 1.0;
+    try {
+      pipesMod.spawnPipe(scene, -18, 0); // pipeCount=0, warmup=5
+      const p = pipesMod.pipes[0];
+      assert.equal(p.laser, null, 'no laser during warmup');
+    } finally {
+      CONFIG.LASER.SPAWN_CHANCE = origChance;
+      CONFIG.LASER.MAX_CHANCE = origMax;
+    }
   });
 });
 
@@ -776,6 +789,21 @@ describe('audio', () => {
     playBgm(audio);
     assert.equal(audio.currentTime, 42, 'currentTime should not be reset');
     assert.equal(audio._playing, true);
+  });
+
+  it('createSfx returns object with 4 audio slots', async () => {
+    const { createSfx } = await import('../js/audio.js');
+    const sfx = createSfx();
+    assert.ok(sfx.phaseIn);
+    assert.ok(sfx.phaseOut);
+    assert.ok(sfx.laserPass);
+    assert.ok(sfx.laserDeath);
+  });
+
+  it('playPhaseIn does not throw with empty src', async () => {
+    const { createSfx, playPhaseIn } = await import('../js/audio.js');
+    const sfx = createSfx();
+    assert.doesNotThrow(() => playPhaseIn(sfx));
   });
 });
 

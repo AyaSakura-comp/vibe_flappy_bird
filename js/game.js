@@ -12,9 +12,11 @@ import { checkLaserCollision, updateLaserShader } from './laser.js';
 import { createTrail, updateTrail, resetTrail } from './trail.js';
 import { createPostProcessing } from './postprocessing.js';
 import * as THREE from 'three';
-import { createAudio, playBgm, pauseBgm } from './audio.js';
+import { createAudio, playBgm, pauseBgm, createSfx, playPhaseIn, playPhaseOut, playLaserPass, playLaserDeath } from './audio.js';
 
 const audio = createAudio();
+const sfx = createSfx();
+window.__GAME_SFX = sfx;
 
 // ── Scene setup ──────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -89,6 +91,7 @@ function forceUnphase() {
   for (const p of pipes) {
     if (checkLaserCollision(birdGroup.position.y, p)) {
       phasing = false;
+      playLaserDeath(sfx);
       triggerGameOver();
       return;
     }
@@ -255,6 +258,8 @@ function loop(now) {
     if (phasing !== wasPhasing) {
       if (now - lastPhaseVfxTime > PHASE_VFX_COOLDOWN) {
         spawnExplosion(scene, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z);
+        if (phasing) playPhaseIn(sfx);
+        else playPhaseOut(sfx);
         lastPhaseVfxTime = now;
       }
       wasPhasing = phasing;
@@ -340,6 +345,7 @@ function loop(now) {
         p.scored = true;
         score++;
         scoreEl.textContent = score;
+        if (p.laser && phasing) playLaserPass(sfx);
       }
 
       if (p.group.position.z > PIPE_REMOVE_Z) {
@@ -354,6 +360,7 @@ function loop(now) {
 
       // Laser collision — phasing bypasses
       if (!phasing && checkLaserCollision(birdGroup.position.y, p)) {
+        playLaserDeath(sfx);
         triggerGameOver(); return;
       }
     }
