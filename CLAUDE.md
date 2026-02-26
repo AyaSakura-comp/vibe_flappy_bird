@@ -16,10 +16,11 @@ js/
   trail.js          — Neon data trail trailing the bird
   environment.js    — World: Grid floor shader, Skyscrapers, Retro Sun, Digital Rain, Mountains
   postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration (Configured via constants.js)
-  game.js           — Main orchestrator: Game loop, State management, Input, Test API
-tests/
-  unit.test.js      — 87 unit tests (node:test) covering all modules
-  high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes in ≤15s
+      game.js           — Main orchestrator: Game loop, State management, Input, Test API
+  tests/
+    unit.test.js      — 96 unit tests (node:test) covering all modules
+    high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes in ≤15s
+  
   flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
   collision.spec.js — Collision test: bird dies on cap contact
   golden.spec.js    — Golden test: verify SYSTEM FAILURE state
