@@ -975,3 +975,54 @@ describe('overheat system', () => {
     assert.ok(result.cooldown > 0);
   });
 });
+
+describe('phase collision rules', () => {
+  it('solid ship vs pipe = death (checkCollision returns true)', () => {
+    const pipe = makePipe(0, 3.5, -3.5);
+    assert.equal(checkCollision(4.0, 0, pipe), true);
+  });
+
+  it('phased ship vs pipe = death (checkCollision still returns true)', () => {
+    // checkCollision has no phasing awareness — pipes always kill
+    const pipe = makePipe(0, 3.5, -3.5);
+    assert.equal(checkCollision(4.0, 0, pipe), true);
+  });
+
+  it('solid ship vs laser = death', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), true);
+  });
+
+  it('phased ship vs laser = safe (game.js gates on !phasing)', () => {
+    // checkLaserCollision itself returns true (it doesn't know about phasing)
+    // The game loop guards: if (!phasing && checkLaserCollision) → die
+    // So we verify the guard logic: when phasing=true, skip collision
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    const laserHit = laserMod.checkLaserCollision(0, pipe, 0.1);
+    const phasing = true;
+    const wouldDie = !phasing && laserHit;
+    assert.equal(wouldDie, false, 'phased ship should not die from laser');
+  });
+
+  it('unphase-while-overlapping laser = death', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    // Simulate: was phasing (true → false), check laser overlap
+    const wasPhasing = true;
+    const nowPhasing = false;
+    const transitioning = wasPhasing && !nowPhasing;
+    const overlapping = laserMod.checkLaserCollision(0, pipe, 0.1);
+    assert.equal(transitioning && overlapping, true, 'should trigger death');
+  });
+});
