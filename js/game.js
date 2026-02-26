@@ -50,7 +50,7 @@ let lastSpawn = 0;
 // Input queuing & Debounce
 let flapRequested = false;
 let lastFlapTime  = 0;
-const FLAP_COOLDOWN = 100; // ms — prevent rapid accidental double-flaps
+const FLAP_COOLDOWN = 350; // ms — catch even slow ghost clicks
 
 // Phase Dive state
 let phasing       = false;
@@ -78,8 +78,12 @@ const phaseBarFillEl = document.getElementById('phase-bar-fill');
 const inputHintsEl = document.getElementById('input-hints');
 
 // ── Input ────────────────────────────────────────────────────────────────
-function handleInput() {
+function handleInput(type = 'unknown') {
   if (gameOver) return;
+  const now = performance.now();
+  if (now - lastFlapTime < FLAP_COOLDOWN) {
+    return;
+  }
   flapRequested = true;
 }
 
@@ -118,7 +122,7 @@ function setPhasing(active) {
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
     e.preventDefault();
-    gameOver ? tryRestart() : handleInput();
+    gameOver ? tryRestart() : handleInput('KEY');
   }
   if (e.code === 'KeyD') {
     e.preventDefault();
@@ -133,16 +137,18 @@ document.addEventListener('keyup', (e) => {
 // touchend checks e.touches (all remaining fingers) — not changedTouches —
 // to avoid unphasing when only one of multiple right-side fingers lifts.
 document.addEventListener('touchstart', (e) => {
+  e.preventDefault(); // Block ghost mousedown
   for (const touch of e.changedTouches) {
     const xRatio = touch.clientX / window.innerWidth;
     if (xRatio < 0.5) {
-      gameOver ? tryRestart() : handleInput();
+      gameOver ? tryRestart() : handleInput('TOUCH');
     } else {
       gameOver ? tryRestart() : setPhasing(true);
     }
   }
-}, { passive: true });
+}, { passive: false });
 document.addEventListener('touchend', (e) => {
+  e.preventDefault();
   let rightSideStillHeld = false;
   for (const touch of e.touches) {
     if (touch.clientX / window.innerWidth >= 0.5) {
@@ -151,8 +157,9 @@ document.addEventListener('touchend', (e) => {
     }
   }
   if (!rightSideStillHeld) setPhasing(false);
-}, { passive: true });
+}, { passive: false });
 document.addEventListener('touchcancel', (e) => {
+  e.preventDefault();
   let rightSideStillHeld = false;
   for (const touch of e.touches) {
     if (touch.clientX / window.innerWidth >= 0.5) {
@@ -161,13 +168,13 @@ document.addEventListener('touchcancel', (e) => {
     }
   }
   if (!rightSideStillHeld) setPhasing(false);
-}, { passive: true });
+}, { passive: false });
 
 // Mouse — split screen: left = flap, right = phase
 document.addEventListener('mousedown', (e) => {
   const xRatio = e.clientX / window.innerWidth;
   if (xRatio < 0.5) {
-    gameOver ? tryRestart() : handleInput();
+    gameOver ? tryRestart() : handleInput('MOUSE');
   } else {
     gameOver ? tryRestart() : setPhasing(true);
   }
@@ -257,19 +264,17 @@ function loop(now) {
   const dt = Math.min((now - prevTime) / (1000 / 60), 3);
   prevTime = now;
 
-  // Process flap request once per frame with debounce
+  // Process flap request once per frame
   if (flapRequested && !gameOver) {
-    if (now - lastFlapTime >= FLAP_COOLDOWN) {
-      if (!started) {
-        started = true;
-        lastSpawn = now;
-        overlayEl.classList.add('hidden');
-        if (inputHintsEl) inputHintsEl.style.display = 'none';
-        playBgm(audio);
-      }
-      velocity = FLAP;
-      lastFlapTime = now;
+    if (!started) {
+      started = true;
+      lastSpawn = now;
+      overlayEl.classList.add('hidden');
+      if (inputHintsEl) inputHintsEl.style.display = 'none';
+      playBgm(audio);
     }
+    velocity = FLAP;
+    lastFlapTime = now;
     flapRequested = false; // clear request
   }
 
