@@ -73,8 +73,16 @@ const phaseBarFillEl = document.getElementById('phase-bar-fill');
 const inputHintsEl = document.getElementById('input-hints');
 
 // ── Input ────────────────────────────────────────────────────────────────
+let lastInputTime = 0;
+let lastTouchTime = 0;
+const INPUT_DEBOUNCE = 20; // ms
+
 function handleInput() {
   if (gameOver) return;
+  const now = performance.now();
+  if (now - lastInputTime < INPUT_DEBOUNCE) return;
+  lastInputTime = now;
+
   if (!started) {
     started = true;
     lastSpawn = performance.now();
@@ -116,7 +124,7 @@ function setPhasing(active) {
   if (active) phaseUsed = true;
 }
 
-// Keyboard
+// Key
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space') {
     e.preventDefault();
@@ -134,17 +142,35 @@ document.addEventListener('keyup', (e) => {
 // Touch — split screen: left = flap, right = phase
 // touchend checks e.touches (all remaining fingers) — not changedTouches —
 // to avoid unphasing when only one of multiple right-side fingers lifts.
+// NOTE: passive:false + preventDefault() is intentional — prevents the browser
+// from synthesizing mousedown/mouseup after touch, which would cause a double-flap.
 document.addEventListener('touchstart', (e) => {
+  e.preventDefault(); // suppress synthetic mouse events (double-flap fix)
+  lastTouchTime = performance.now();
+
+  let leftSideTouched = false;
+  let rightSideTouched = false;
+
   for (const touch of e.changedTouches) {
     const xRatio = touch.clientX / window.innerWidth;
-    if (xRatio < 0.5) {
-      gameOver ? tryRestart() : handleInput();
-    } else {
-      gameOver ? tryRestart() : setPhasing(true);
-    }
+    if (xRatio < 0.5) leftSideTouched = true;
+    else rightSideTouched = true;
   }
-}, { passive: true });
+
+  // Handle restart first
+  if (gameOver && (leftSideTouched || rightSideTouched)) {
+    tryRestart();
+    return;
+  }
+
+  // Action: Phase takes precedence if both touched in same event, or just handle both
+  if (leftSideTouched) handleInput();
+  if (rightSideTouched) setPhasing(true);
+}, { passive: false });
+
 document.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  lastTouchTime = performance.now();
   let rightSideStillHeld = false;
   for (const touch of e.touches) {
     if (touch.clientX / window.innerWidth >= 0.5) {
@@ -153,8 +179,11 @@ document.addEventListener('touchend', (e) => {
     }
   }
   if (!rightSideStillHeld) setPhasing(false);
-}, { passive: true });
+}, { passive: false });
+
 document.addEventListener('touchcancel', (e) => {
+  e.preventDefault();
+  lastTouchTime = performance.now();
   let rightSideStillHeld = false;
   for (const touch of e.touches) {
     if (touch.clientX / window.innerWidth >= 0.5) {
@@ -163,10 +192,13 @@ document.addEventListener('touchcancel', (e) => {
     }
   }
   if (!rightSideStillHeld) setPhasing(false);
-}, { passive: true });
+}, { passive: false });
 
 // Mouse — split screen: left = flap, right = phase
 document.addEventListener('mousedown', (e) => {
+  // Suppress synthetic mouse events on mobile
+  if (performance.now() - lastTouchTime < 500) return;
+
   const xRatio = e.clientX / window.innerWidth;
   if (xRatio < 0.5) {
     gameOver ? tryRestart() : handleInput();
@@ -174,7 +206,9 @@ document.addEventListener('mousedown', (e) => {
     gameOver ? tryRestart() : setPhasing(true);
   }
 });
+
 document.addEventListener('mouseup', (e) => {
+  if (performance.now() - lastTouchTime < 500) return;
   const xRatio = e.clientX / window.innerWidth;
   if (xRatio >= 0.5) setPhasing(false);
 });

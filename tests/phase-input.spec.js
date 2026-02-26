@@ -64,7 +64,8 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
 
   // Count how many times mousedown fires after a synthetic touch on the left side.
   // With the fix (e.preventDefault() on touchstart), this should be 0.
-  const mousedownCount = await page.evaluate(() => {
+  // Also capture velocity immediately after touch to verify it flapped.
+  const { mousedownCount, velocityAfterTouch } = await page.evaluate(() => {
     return new Promise((resolve) => {
       let count = 0;
       document.addEventListener('mousedown', () => { count++; }, { capture: true });
@@ -92,8 +93,12 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
         cancelable: true,
       }));
 
-      // 300ms exceeds any browser compatibility-event delay (typically synchronous in Chromium)
-      setTimeout(() => resolve(count), 300);
+      // Wait for next frame for game loop to update __FLAPPY_VELOCITY
+      requestAnimationFrame(() => {
+        const vel = window.__FLAPPY_VELOCITY;
+        // 300ms exceeds any browser compatibility-event delay (typically synchronous in Chromium)
+        setTimeout(() => resolve({ mousedownCount: count, velocityAfterTouch: vel }), 300);
+      });
     });
   });
 
@@ -101,11 +106,7 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
 
   // Also verify the touch DID trigger a flap (feature still works).
   // FLAP = -0.25 in this game's physics (negative = upward).
-  // Read immediately after the Promise resolves — the value is captured before
-  // the game loop has fully reversed it. If this ever becomes flaky, read
-  // __FLAPPY_VELOCITY right after dispatchEvent instead of after the 300ms wait.
-  const velocityAfter = await page.evaluate(() => window.__FLAPPY_VELOCITY);
-  expect(velocityAfter).toBeLessThan(0);
+  expect(velocityAfterTouch).toBeLessThan(0);
 
   await context.close();
 });
