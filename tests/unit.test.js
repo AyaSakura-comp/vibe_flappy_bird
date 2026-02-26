@@ -174,6 +174,7 @@ const { createEnvironment, updateEnvironment } = await import('../js/environment
 const { spawnExplosion, updateExplosion, clearParticles } = await import('../js/explosion.js');
 const pipesMod = await import('../js/pipes.js');
 const trailMod = await import('../js/trail.js');
+const laserMod = await import('../js/laser.js');
 
 // ── collision.js ────────────────────────────────────────────────────────
 function makePipe(z, gapTop, gapBot) {
@@ -749,5 +750,99 @@ describe('audio', () => {
     playBgm(audio);
     assert.equal(audio.currentTime, 42, 'currentTime should not be reset');
     assert.equal(audio._playing, true);
+  });
+});
+
+// ── laser.js ─────────────────────────────────────────────────────────────
+describe('laser.js', () => {
+  it('createLaserNet returns mesh, hitTop, hitBot', () => {
+    const result = laserMod.createLaserNet(3.75, -3.75);
+    assert.ok(result.mesh);
+    assert.ok(typeof result.hitTop === 'number');
+    assert.ok(typeof result.hitBot === 'number');
+  });
+
+  it('laser hitbox occupies GAP_FRACTION of the gap, centered', () => {
+    const gapTop = 3.75, gapBot = -3.75;
+    const gapHeight = gapTop - gapBot; // 7.5
+    const result = laserMod.createLaserNet(gapTop, gapBot);
+    const laserHeight = result.hitTop - result.hitBot;
+    assert.ok(Math.abs(laserHeight - gapHeight * CONFIG.LASER.GAP_FRACTION) < 0.01,
+      `laser height ${laserHeight} should be ${gapHeight * CONFIG.LASER.GAP_FRACTION}`);
+    const center = (result.hitTop + result.hitBot) / 2;
+    const gapCenter = (gapTop + gapBot) / 2;
+    assert.ok(Math.abs(center - gapCenter) < 0.01,
+      'laser should be centered in gap');
+  });
+
+  it('checkLaserCollision returns true when solid ship overlaps laser', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    // Bird at center of gap (y=0) — should overlap laser (centered at 0)
+    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), true);
+  });
+
+  it('checkLaserCollision returns false when bird is above laser', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    // Bird well above laser center (laser is only 25% of 7.5 = 1.875 tall, centered at 0)
+    // hitTop = 0.9375, hitBot = -0.9375. Bird at y=3.0 with margin=0.1: y-margin=2.9 > hitTop=0.9375
+    assert.equal(laserMod.checkLaserCollision(3.0, pipe, 0.1), false);
+  });
+
+  it('checkLaserCollision returns false when bird is below laser', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    assert.equal(laserMod.checkLaserCollision(-3.0, pipe, 0.1), false);
+  });
+
+  it('checkLaserCollision returns false when pipe has no laser', () => {
+    const pipe = {
+      group: { position: { z: 0 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: null,
+    };
+    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), false);
+  });
+
+  it('checkLaserCollision returns false when pipe z is out of range', () => {
+    const pipe = {
+      group: { position: { z: -5 } },
+      gapTop: 3.75, gapBot: -3.75,
+      laser: laserMod.createLaserNet(3.75, -3.75),
+    };
+    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), false);
+  });
+
+  it('shouldSpawnLaser returns false during warmup', () => {
+    assert.equal(laserMod.shouldSpawnLaser(0, 0), false);
+    assert.equal(laserMod.shouldSpawnLaser(4, 0), false);
+  });
+
+  it('shouldSpawnLaser can return true after warmup with chance=1', () => {
+    const origChance = CONFIG.LASER.SPAWN_CHANCE;
+    CONFIG.LASER.SPAWN_CHANCE = 1.0;
+    assert.equal(laserMod.shouldSpawnLaser(5, 0), true);
+    CONFIG.LASER.SPAWN_CHANCE = origChance;
+  });
+
+  it('dynamic difficulty increases chance with score', () => {
+    // At score 20: chance = min(0.7, 0.35 + 20*0.015) = 0.65
+    const chance = laserMod.getLaserChance(20);
+    assert.ok(Math.abs(chance - 0.65) < 0.01);
+  });
+
+  it('dynamic difficulty caps at MAX_CHANCE', () => {
+    const chance = laserMod.getLaserChance(100);
+    assert.equal(chance, CONFIG.LASER.MAX_CHANCE);
   });
 });
