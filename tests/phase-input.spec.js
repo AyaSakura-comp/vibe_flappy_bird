@@ -49,8 +49,13 @@ test('Flap and phase work simultaneously', async ({ page }) => {
   expect(phasing).toBe(true);
 });
 
-test('Touch tap does not synthesize a mousedown event (double-flap regression)', async ({ page }) => {
+test('Touch tap does not synthesize a mousedown event (double-flap regression)', async ({ browser }) => {
   test.setTimeout(15000);
+
+  // IMPORTANT: Must use hasTouch:true context — only touch-emulated contexts
+  // activate the browser's compatibility-mouse-events pipeline that the fix suppresses.
+  const context = await browser.newContext({ hasTouch: true, isMobile: true });
+  const page = await context.newPage();
 
   await page.goto('http://localhost:3457/index.html');
   await page.waitForSelector('canvas');
@@ -64,11 +69,11 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
       let count = 0;
       document.addEventListener('mousedown', () => { count++; }, { capture: true });
 
-      // Simulate a left-side tap via TouchEvent
-      const target = document.body;
+      // Dispatch on document — matches where the game listener is attached
+      const target = document;
       const touch = new Touch({
         identifier: Date.now(),
-        target,
+        target: document.body,
         clientX: window.innerWidth * 0.25, // left quarter
         clientY: window.innerHeight * 0.5,
         radiusX: 10, radiusY: 10,
@@ -87,10 +92,18 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
         cancelable: true,
       }));
 
-      // Wait 300ms for any synthetic mouse events to fire
+      // 300ms exceeds any browser compatibility-event delay (typically synchronous in Chromium)
       setTimeout(() => resolve(count), 300);
     });
   });
 
   expect(mousedownCount).toBe(0);
+
+  // Also verify the touch DID trigger a flap (feature still works).
+  // FLAP = -0.25 in this game's physics (negative = upward). After a flap + 300ms,
+  // gravity (0.019/frame) has not yet fully reversed the velocity, so it remains < 0.
+  const velocityAfter = await page.evaluate(() => window.__FLAPPY_VELOCITY);
+  expect(velocityAfter).toBeLessThan(0);
+
+  await context.close();
 });
