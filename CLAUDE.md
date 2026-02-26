@@ -7,62 +7,61 @@ A high-intensity, synthwave-themed 3D Flappy Bird clone built with Three.js (r12
 ```
 index.html          — HTML/CSS UI + Three.js Import Map
 js/
-  constants.js      — Centralized CONFIG: Physics, Pipes, Visuals, and Colors
+  constants.js      — Centralized CONFIG: Physics, Pipes, Visuals, Phase, and Lasers
   collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin)
   explosion.js      — Particle system: spawnExplosion(), updateExplosion()
-  audio.js          — Background music: createAudio(), playBgm(), pauseBgm()
+  audio.js          — Audio manager: Background music and SFX (Phase, Laser)
   bird.js           — createBird(scene) → { birdGroup, eng }
-  pipes.js          — Pipe management: spawning, recycling, pattern generation
-  trail.js          — Neon data trail trailing the bird
+  pipes.js          — Pipe management: spawning, recycling, laser integration
+  laser.js          — Laser Net module: Mesh creation, shaders, and collision
+  trail.js          — Neon data trail trailing the bird (supports phasing mode)
   environment.js    — World: Grid floor shader, Skyscrapers, Retro Sun, Digital Rain, Mountains
-  postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration (Configured via constants.js)
-      game.js           — Main orchestrator: Game loop, State management, Input, Test API
-  tests/
-    unit.test.js      — 96 unit tests (node:test) covering all modules
-    high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes in ≤15s
-  
-  flappy.spec.js    — Survival test: AI navigates ≥10 pipes (Playwright)
-  collision.spec.js — Collision test: bird dies on cap contact
+  postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration
+  game.js           — Main orchestrator: Game loop, State management, Input, Test API
+tests/
+  unit.test.js      — 96 unit tests (node:test) covering all modules
+  high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes (updated for lasers)
+  phase-dive-pilot.spec.js — Specialized Phase Dive pilot: handles laser navigation
+  collision-phase.spec.js — Collision rules: solid/phased vs pipe/laser
+  overheat.spec.js  — Stamina system: depletion, cooldown, and death checks
+  phase-input.spec.js — Input: split-screen controls (Keyboard/Touch/Mouse)
+  phase-visuals.spec.js — Visuals: ship translucency and trail color changes
+  laser-visual.spec.js — Lasers: spawn logic and shader visibility
+  flappy.spec.js    — Survival test: simple AI navigates ≥10 pipes
+  collision.spec.js — Collision test: bird dies on pipe contact
   golden.spec.js    — Golden test: verify SYSTEM FAILURE state
-  record-gameplay.spec.js — Visual verification: record gameplay video
+  baseline-recording.spec.js — Pre-feature reference recording
 docs/plans/         — Design and implementation plan documents
 golden/
-  synthwave-overhaul.webm — Reference video for the 2026-02-25 visual update
-  high-score-5plus.webm   — Reference video for high-intensity physics gameplay
+  final-phase-dive.webm — Complete feature verification video (Cumulative)
+  baseline-pre-phase-dive.webm — Reference video before Phase Dive
 package.json
 ```
 
 ## Architecture & Design
 
 - **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
-- **Centralized Config**: All game tuning (Gravity, Speed, Colors, Bloom, and Post-processing) is managed in `js/constants.js` via the `CONFIG` object.
-- **High-Intensity Physics**: Tuned for a fast, arcade feel (Gravity: 0.019, Pipe Speed: 0.16).
+- **Centralized Config**: All game tuning (Gravity, Speed, Colors, Phase, and Lasers) is managed in `js/constants.js`.
+- **Mechanics**:
+  - **Phase Dive**: Holding 'D' (or right-screen) makes the ship translucent and immune to **Laser Nets**.
+  - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
+  - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes.
 - **Visual Identity (Synthwave)**:
-  - **UI**: Cyberpunk-themed overlays with glow effects.
-    - Start: `CYBER FLAP` — `[ CLICK OR SPACE TO JACK IN ]`
-    - Game Over: `SYSTEM FAILURE` — `// CLICK TO REBOOT`
-  - **Environment**: Multi-layered parallax world.
-    - **Foreground**: Scrolling GLSL neon grid floor (Magenta/Cyan).
-    - **Midground**: Skyscrapers with neon window grids and beveled glowing edges.
-    - **Background**: Sliced retro sun (Orange/Red), wireframe mountains, and digital rain particles.
-  - **Post-Processing**: Heavy stack for "CRT/VHS" aesthetic.
-    - High-intensity **Bloom** (neon glow).
-    - **Color Grading**: Crushed shadows with magenta midtone pushes.
-    - **VHS Effects**: Film grain, visible scanlines, and subtle chromatic aberration on edges.
-- **Aspect-Aware Rendering**: FOV and layout are dynamically adjusted to maintain consistent gameplay across 9:16 (mobile) and 16:9 (desktop) viewports.
+  - **UI**: Cyberpunk-themed overlays with dynamic input hints.
+  - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
+- **Performance**: Optimized game loop with DOM element caching and debounced VFX spawning.
 - **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
   - `__FLAPPY_BIRD_Y`, `__FLAPPY_VELOCITY`, `__FLAPPY_SCORE`, `__FLAPPY_STARTED`, `__FLAPPY_OVER`
-  - `__FLAPPY_NEXT_GAP_TOP/BOT`, `__FLAPPY_NEXT_PIPE_Z` — next unscored pipe
-  - `__FLAPPY_NEXT2_GAP_TOP/BOT`, `__FLAPPY_NEXT2_PIPE_Z` — second unscored pipe (look-ahead)
-  - `__FLAPPY_START_QUIET` — start game without flap velocity (for pilot tests)
-  - `__FLAPPY_RESTART` — direct restart bypassing overlay timing
-  - `__GAME_CONFIG` — live reference to CONFIG object; mutations (e.g. PIPES.SPEED) take effect each frame
+  - `__FLAPPY_NEXT_GAP_TOP/BOT`, `__FLAPPY_NEXT_PIPE_Z`, `__FLAPPY_NEXT_LASER`
+  - `__FLAPPY_PHASING`, `__FLAPPY_PHASE_STAMINA`, `__FLAPPY_PHASE_COOLDOWN`
+  - `__FLAPPY_PHASE_ACTIVATE()`, `__FLAPPY_PHASE_DEACTIVATE()`
+  - `__FLAPPY_START_QUIET`, `__FLAPPY_RESTART`, `__FLAPPY_CLEAR_PIPES`, `__FLAPPY_GRAVITY_SCALE`
 
 ## Running
 
 ```bash
 # Serve locally
-node node_modules/http-server/bin/http-server . -p 1124 --cors -c-1
+node node_modules/http-server/bin/http-server . -p 3457 --cors -c-1
 
 # Run tests
 node node_modules/@playwright/test/cli.js test
@@ -70,12 +69,6 @@ node node_modules/@playwright/test/cli.js test
 
 ## Test Notes
 
-- **Automated High-Score**: `tests/high-score.spec.js` uses a zero-latency in-browser pilot to record high-score gameplay.
-  - Physics-predictive pilot simulates bird trajectory to target the center of each pipe's safe zone.
-  - Detects pipe bunching (caused by GPU ReadPixels dt-capping) via `__FLAPPY_NEXT2_*` look-ahead; targets gap intersection when two pipes share the collision zone.
-  - Applies 2× pipe speed override (`window.__GAME_CONFIG.PIPES.SPEED = 0.32`) so 20+ pipes complete in ~13s on this WSL2 hardware (vs ~20s at default speed).
-  - Uses `waitForFunction({ polling: 'raf' })` for zero-IPC score detection.
-- **Unit Tests**: `npm run test:unit` runs 63 tests using a local Three.js mock.
-- **Videos**: Playwright is configured to record videos of all E2E test runs for visual verification.
-  - Viewport: 1080×1920 (portrait/mobile). Video target: ≤15s.
-
+- **Automated High-Score**: `tests/high-score.spec.js` and `tests/phase-dive-pilot.spec.js` use zero-latency pilots to record 20+ pipe navigation at 2× speed (`window.__GAME_CONFIG.PIPES.SPEED = 0.32`).
+- **Unit Tests**: `npm run test:unit` runs 96 tests using a local Three.js mock.
+- **Videos**: Playwright records videos of all E2E test runs. Standardized theme consistency protocol is used to verify that new features preserve the synthwave aesthetic.
