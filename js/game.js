@@ -47,6 +47,11 @@ let gameOver  = false;
 let animId    = null;
 let lastSpawn = 0;
 
+// Input queuing & Debounce
+let flapRequested = false;
+let lastFlapTime  = 0;
+const FLAP_COOLDOWN = 100; // ms — prevent rapid accidental double-flaps
+
 // Phase Dive state
 let phasing       = false;
 let phaseStamina  = CONFIG.PHASE.MAX_DURATION;
@@ -75,14 +80,7 @@ const inputHintsEl = document.getElementById('input-hints');
 // ── Input ────────────────────────────────────────────────────────────────
 function handleInput() {
   if (gameOver) return;
-  if (!started) {
-    started = true;
-    lastSpawn = performance.now();
-    overlayEl.classList.add('hidden');
-    if (inputHintsEl) inputHintsEl.style.display = 'none';
-    playBgm(audio);
-  }
-  velocity = FLAP;
+  flapRequested = true;
 }
 
 function tryRestart() {
@@ -235,6 +233,7 @@ function restartGame() {
   birdGroup.rotation.z = 0;
   resetTrail(trail);
   velocity = 0; score = 0; started = false; gameOver = false; shakeAmp = 0;
+  flapRequested = false; lastFlapTime = 0;
   phasing = false; phaseStamina = CONFIG.PHASE.MAX_DURATION; phaseCooldown = 0; phaseUsed = false;
   wasPhasing = false;
   scoreEl.textContent = '0';
@@ -257,6 +256,22 @@ function loop(now) {
   animId = requestAnimationFrame(loop);
   const dt = Math.min((now - prevTime) / (1000 / 60), 3);
   prevTime = now;
+
+  // Process flap request once per frame with debounce
+  if (flapRequested && !gameOver) {
+    if (now - lastFlapTime >= FLAP_COOLDOWN) {
+      if (!started) {
+        started = true;
+        lastSpawn = now;
+        overlayEl.classList.add('hidden');
+        if (inputHintsEl) inputHintsEl.style.display = 'none';
+        playBgm(audio);
+      }
+      velocity = FLAP;
+      lastFlapTime = now;
+    }
+    flapRequested = false; // clear request
+  }
 
   if (started && !gameOver) {
     const gravScale = window.__FLAPPY_GRAVITY_SCALE ?? 1;
