@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CYBER FLAP</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
@@ -74,6 +74,54 @@
       97% { opacity: 1; }
       98% { opacity: 0.6; }
     }
+
+    #phase-hud {
+      display: none;
+      position: fixed;
+      bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+    }
+    #phase-bar-container {
+      width: 120px;
+      height: 8px;
+      border: 1px solid rgba(0, 255, 255, 0.4);
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #phase-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: #00ffff;
+      transition: width 0.1s linear, background-color 0.3s;
+      box-shadow: 0 0 8px #00ffff;
+    }
+    #input-hints {
+      position: fixed;
+      bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      z-index: 15;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+    #input-hints .hint-left, #input-hints .hint-right {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #00ffff;
+      text-shadow: 0 0 6px #00ffff;
+    }
+    #input-hints .hint-divider {
+      width: 1px;
+      height: 30px;
+      background: rgba(0, 255, 255, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -82,6 +130,16 @@
     <h1 id="overlay-title">CYBER FLAP</h1>
     <div class="divider"></div>
     <p id="overlay-msg">[ CLICK OR SPACE TO JACK IN ]</p>
+  </div>
+  <div id="phase-hud">
+    <div id="phase-bar-container">
+      <div id="phase-bar-fill"></div>
+    </div>
+  </div>
+  <div id="input-hints">
+    <span class="hint-left">TAP TO JUMP</span>
+    <div class="hint-divider"></div>
+    <span class="hint-right">HOLD TO PHASE</span>
   </div>
 
   <script type="importmap">

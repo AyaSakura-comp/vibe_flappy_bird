@@ -45,6 +45,12 @@ let gameOver  = false;
 let animId    = null;
 let lastSpawn = 0;
 
+// Phase Dive state
+let phasing       = false;
+let phaseStamina  = CONFIG.PHASE.MAX_DURATION;
+let phaseCooldown = 0;
+let phaseUsed     = false; // tracks if phase was ever activated (for HUD visibility)
+
 // Screen shake state
 let shakeAmp = 0;     // current shake amplitude (decays to 0)
 const SHAKE_DECAY = 0.92; // multiplier per frame at 60fps (~2s duration)
@@ -71,6 +77,77 @@ function tryRestart() {
   if (gameOver && !overlayEl.classList.contains('hidden')) restartGame();
 }
 
+function setPhasing(active) {
+  if (gameOver || !started) return;
+  if (active && phaseCooldown > 0) return;  // locked during cooldown
+  if (active && phaseStamina <= 0) return;   // depleted
+  phasing = active;
+  if (active) phaseUsed = true;
+}
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    gameOver ? tryRestart() : handleInput();
+  }
+  if (e.code === 'KeyD') {
+    e.preventDefault();
+    setPhasing(true);
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'KeyD') setPhasing(false);
+});
+
+// Touch — split screen: left = flap, right = phase
+// touchend checks e.touches (all remaining fingers) — not changedTouches —
+// to avoid unphasing when only one of multiple right-side fingers lifts.
+document.addEventListener('touchstart', (e) => {
+  for (const touch of e.changedTouches) {
+    const xRatio = touch.clientX / window.innerWidth;
+    if (xRatio < 0.5) {
+      gameOver ? tryRestart() : handleInput();
+    } else {
+      gameOver ? tryRestart() : setPhasing(true);
+    }
+  }
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  let rightSideStillHeld = false;
+  for (const touch of e.touches) {
+    if (touch.clientX / window.innerWidth >= 0.5) {
+      rightSideStillHeld = true;
+      break;
+    }
+  }
+  if (!rightSideStillHeld) setPhasing(false);
+}, { passive: true });
+document.addEventListener('touchcancel', (e) => {
+  let rightSideStillHeld = false;
+  for (const touch of e.touches) {
+    if (touch.clientX / window.innerWidth >= 0.5) {
+      rightSideStillHeld = true;
+      break;
+    }
+  }
+  if (!rightSideStillHeld) setPhasing(false);
+}, { passive: true });
+
+// Mouse — split screen: left = flap, right = phase
+document.addEventListener('mousedown', (e) => {
+  const xRatio = e.clientX / window.innerWidth;
+  if (xRatio < 0.5) {
+    gameOver ? tryRestart() : handleInput();
+  } else {
+    gameOver ? tryRestart() : setPhasing(true);
+  }
+});
+document.addEventListener('mouseup', (e) => {
+  const xRatio = e.clientX / window.innerWidth;
+  if (xRatio >= 0.5) setPhasing(false);
+});
+
 function updateCameraProjection() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.aspect = aspect;
@@ -88,14 +165,6 @@ function updateCameraProjection() {
   
   camera.updateProjectionMatrix();
 }
-
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space') {
-    e.preventDefault();
-    gameOver ? tryRestart() : handleInput();
-  }
-});
-document.addEventListener('click', () => gameOver ? tryRestart() : handleInput());
 
 window.addEventListener('resize', () => {
   updateCameraProjection();
@@ -134,6 +203,7 @@ function restartGame() {
   birdGroup.rotation.z = 0;
   resetTrail(trail);
   velocity = 0; score = 0; started = false; gameOver = false; shakeAmp = 0;
+  phasing = false; phaseStamina = CONFIG.PHASE.MAX_DURATION; phaseCooldown = 0; phaseUsed = false;
   scoreEl.textContent = '0';
   overlayTitle.textContent = 'CYBER FLAP';
   overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
@@ -214,7 +284,12 @@ function loop(now) {
   window.__FLAPPY_NEXT2_GAP_TOP = _np2 ? _np2.gapTop : 0;
   window.__FLAPPY_NEXT2_GAP_BOT = _np2 ? _np2.gapBot : 0;
   window.__FLAPPY_NEXT2_PIPE_Z  = _np2 ? _np2.group.position.z : -99;
-  window.__FLAPPY_NEXT_LASER   = _np && _np.laser ? true : false;
+  window.__FLAPPY_NEXT_LASER      = _np && _np.laser ? true : false;
+  window.__FLAPPY_PHASING         = phasing;
+  window.__FLAPPY_PHASE_STAMINA   = phaseStamina;
+  window.__FLAPPY_PHASE_COOLDOWN  = phaseCooldown;
+  window.__FLAPPY_PHASE_ACTIVATE  = () => setPhasing(true);
+  window.__FLAPPY_PHASE_DEACTIVATE = () => setPhasing(false);
   window.__FLAPPY_SHAKE_AMP    = shakeAmp;
 
   // Screen shake — sine wave at ~8Hz so it's visible in compressed video
