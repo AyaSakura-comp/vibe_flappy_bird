@@ -24,7 +24,7 @@ tests/
   phase-dive-pilot.spec.js — Specialized Phase Dive pilot: handles laser navigation
   collision-phase.spec.js — Collision rules: solid/phased vs pipe/laser
   overheat.spec.js  — Stamina system: depletion, cooldown, and death checks
-  phase-input.spec.js — Input: split-screen controls (Keyboard/Touch/Mouse)
+  phase-input.spec.js — Input: split-screen controls (Keyboard/Touch/Mouse) + mobile double-flap regression test
   phase-visuals.spec.js — Visuals: ship translucency and trail color changes
   laser-visual.spec.js — Lasers: spawn logic and shader visibility
   flappy.spec.js    — Survival test: simple AI navigates ≥10 pipes
@@ -49,6 +49,7 @@ package.json
 - **Visual Identity (Synthwave)**:
   - **UI**: Cyberpunk-themed overlays with dynamic input hints.
   - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
+- **Mobile Input**: Touch handlers use `{ passive: false }` + `e.preventDefault()` on `touchstart`/`touchend` to suppress the browser's synthetic `mousedown` (prevents double-flap). `touch-action: none` on `body` reinforces this at the CSS compositor layer.
 - **Performance**: Optimized game loop with DOM element caching and debounced VFX spawning.
 - **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
   - `__FLAPPY_BIRD_Y`, `__FLAPPY_VELOCITY`, `__FLAPPY_SCORE`, `__FLAPPY_STARTED`, `__FLAPPY_OVER`
