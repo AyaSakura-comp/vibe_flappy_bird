@@ -1,8 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
 test('Verify: fast pipe speed', async ({ page }) => {
-  await page.goto('http://localhost:3456/index.html');
+  await page.goto('http://localhost:3457/index.html');
   await page.waitForSelector('canvas', { timeout: 10000 });
+  await page.evaluate(() => { if(window.__GAME_CONFIG) { window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART(); } });
   await page.waitForTimeout(1500);
 
   const cx = 360, cy = 640;

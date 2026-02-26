@@ -7,7 +7,7 @@ test('Laser nets appear in pipe gaps after warmup', async ({ page }) => {
     // Force all lasers after short warmup and speed up pipes
     const _setup = () => {
       if (window.__GAME_CONFIG) {
-        window.__GAME_CONFIG.PIPES.SPEED = 0.32;
+        window.__GAME_CONFIG.PIPES.SPEED = 0.32; window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
         window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 1.0;
         window.__GAME_CONFIG.LASER.WARMUP_PIPES = 2;
       } else {

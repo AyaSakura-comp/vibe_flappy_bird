@@ -8,12 +8,12 @@ test('Phase Dive pilot: navigate 20+ pipes with laser nets', async ({ page }) =>
   });
 
   await page.addInitScript(() => {
-    window.PILOT_ENABLED = true;
+    window.PILOT_ENABLED = true; if(window.__GAME_CONFIG) window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
     window.__PILOT_BEST = 0;
 
     const _speedup = () => {
       if (window.__GAME_CONFIG) {
-        window.__GAME_CONFIG.PIPES.SPEED = 0.32;
+        window.__GAME_CONFIG.PIPES.SPEED = 0.32; window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
         // Ensure lasers spawn frequently for testing
         window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0.5;
         window.__GAME_CONFIG.LASER.WARMUP_PIPES = 3;

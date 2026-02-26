@@ -88,7 +88,7 @@ test('Phased ship still dies on pipe collision', async ({ page }) => {
   await page.addInitScript(() => {
     const _setup = () => {
       if (window.__GAME_CONFIG) {
-        window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0;
+        window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
       } else {
         setTimeout(_setup, 50);
       }

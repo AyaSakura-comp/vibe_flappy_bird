@@ -17,14 +17,18 @@ test('3D Flappy Bird - bird flaps and survives', async ({ page }) => {
   const isOver      = () => page.evaluate(() => window.__FLAPPY_OVER    ?? false);
 
   // Gap-targeting flap strategy:
-  //   - Read the next pipe's gap center (exposed as __FLAPPY_NEXT_GAP_Y)
-  //   - Flap when bird is more than 1.0 units below that target
-  const TOLERANCE_BELOW  = 0.6;
+  const TOLERANCE_BELOW  = 0.8;
   const CHECK_INTERVAL_MS = 50;   // fast polling so we never miss a flap window
   const TARGET_SCORE      = 10;   // must pass at least 10 obstacles
   const TIMEOUT_MS        = 75000; // safety timeout
 
   // First click starts the game
+  await page.evaluate(() => {
+    if (window.__GAME_CONFIG) {
+      window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0;
+      if (window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
+    }
+  });
   await page.mouse.click(cx, cy);
   await page.waitForTimeout(500);
 

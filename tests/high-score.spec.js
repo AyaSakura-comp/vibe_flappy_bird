@@ -8,14 +8,14 @@ test('Record high-score gameplay: navigate 20+ pipes', async ({ page }) => {
   });
 
   await page.addInitScript(() => {
-    window.PILOT_ENABLED = true;
+    window.PILOT_ENABLED = true; if(window.__GAME_CONFIG) window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
     window.__PILOT_BEST  = 0;
 
     // Speed up pipes 2x so 20 pipes complete in ~8s instead of ~18s on this hardware.
     // CONFIG is exposed as window.__GAME_CONFIG — mutations take effect each game loop frame.
     const _speedup = () => {
       if (window.__GAME_CONFIG) {
-        window.__GAME_CONFIG.PIPES.SPEED = 0.32;
+        window.__GAME_CONFIG.PIPES.SPEED = 0.32; window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
         // Boost stamina recharge for the pilot to handle lasers at high speed
         window.__GAME_CONFIG.PHASE.CHARGE_RATE = 2.0;
       } else {

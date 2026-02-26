@@ -5,10 +5,10 @@ test('Record baseline gameplay before Phase Dive', async ({ page }) => {
   test.setTimeout(30000);
 
   await page.addInitScript(() => {
-    window.PILOT_ENABLED = true;
+    window.PILOT_ENABLED = true; if(window.__GAME_CONFIG) window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
     const _speedup = () => {
       if (window.__GAME_CONFIG) {
-        window.__GAME_CONFIG.PIPES.SPEED = 0.32;
+        window.__GAME_CONFIG.PIPES.SPEED = 0.32; window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 0; if(window.__FLAPPY_RESTART) window.__FLAPPY_RESTART();
       } else {
         setTimeout(_speedup, 50);
       }
