@@ -1,6 +1,7 @@
 {
   "name": "flappy3d",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "test": "playwright test",
     "test:unit": "node tests/unit.test.js"

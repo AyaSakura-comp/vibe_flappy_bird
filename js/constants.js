@@ -47,6 +47,19 @@ export const CONFIG = {
       }
     }
   },
+  PHASE: {
+    MAX_DURATION: 1.5,    // seconds max continuous phase
+    COOLDOWN: 1.0,        // seconds locked after depletion
+    DRAIN_RATE: 1.0,      // stamina/sec while phasing
+    CHARGE_RATE: 0.5,     // stamina/sec while not phasing (3s full recharge)
+  },
+  LASER: {
+    WARMUP_PIPES: 5,          // first N pipes have no laser
+    SPAWN_CHANCE: 0.35,       // base probability per pipe
+    MAX_CHANCE: 0.7,          // cap at 70%
+    CHANCE_PER_SCORE: 0.015,  // +1.5% per point scored
+    GAP_FRACTION: 0.25,       // laser height = GAP * 0.25 (25% of gap)
+  },
   ENVIRONMENT: {
     PARALLAX_SPEED: 0.025,
     CITY: {

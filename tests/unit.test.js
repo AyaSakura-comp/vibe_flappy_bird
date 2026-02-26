@@ -236,6 +236,39 @@ describe('constants', () => {
   });
 });
 
+describe('phase dive constants', () => {
+  it('CONFIG.PHASE exists with correct defaults', () => {
+    assert.ok(CONFIG.PHASE);
+    assert.equal(CONFIG.PHASE.MAX_DURATION, 1.5);
+    assert.equal(CONFIG.PHASE.COOLDOWN, 1.0);
+    assert.equal(CONFIG.PHASE.DRAIN_RATE, 1.0);
+    assert.equal(CONFIG.PHASE.CHARGE_RATE, 0.5);
+  });
+
+  it('CONFIG.LASER exists with correct defaults', () => {
+    assert.ok(CONFIG.LASER);
+    assert.equal(CONFIG.LASER.WARMUP_PIPES, 5);
+    assert.equal(CONFIG.LASER.SPAWN_CHANCE, 0.35);
+    assert.equal(CONFIG.LASER.MAX_CHANCE, 0.7);
+    assert.equal(CONFIG.LASER.CHANCE_PER_SCORE, 0.015);
+    assert.equal(CONFIG.LASER.GAP_FRACTION, 0.25);
+  });
+
+  it('CONFIG.PHASE values are physically sane', () => {
+    assert.ok(CONFIG.PHASE.MAX_DURATION > 0);
+    assert.ok(CONFIG.PHASE.COOLDOWN > 0);
+    assert.ok(CONFIG.PHASE.DRAIN_RATE > 0);
+    assert.ok(CONFIG.PHASE.CHARGE_RATE > 0);
+    assert.ok(CONFIG.PHASE.CHARGE_RATE < CONFIG.PHASE.DRAIN_RATE,
+      'charge should be slower than drain');
+  });
+
+  it('CONFIG.LASER.GAP_FRACTION is between 0.2 and 0.3', () => {
+    assert.ok(CONFIG.LASER.GAP_FRACTION >= 0.2);
+    assert.ok(CONFIG.LASER.GAP_FRACTION <= 0.3);
+  });
+});
+
 // ── bird.js ─────────────────────────────────────────────────────────────
 describe('createBird', () => {
   it('returns birdGroup and eng', () => {
