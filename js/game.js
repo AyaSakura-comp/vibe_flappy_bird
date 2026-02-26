@@ -68,6 +68,10 @@ const overlayEl    = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayMsg   = document.getElementById('overlay-msg');
 
+const phaseHudEl = document.getElementById('phase-hud');
+const phaseBarFillEl = document.getElementById('phase-bar-fill');
+const inputHintsEl = document.getElementById('input-hints');
+
 // ── Input ────────────────────────────────────────────────────────────────
 function handleInput() {
   if (gameOver) return;
@@ -75,6 +79,7 @@ function handleInput() {
     started = true;
     lastSpawn = performance.now();
     overlayEl.classList.add('hidden');
+    if (inputHintsEl) inputHintsEl.style.display = 'none';
     playBgm(audio);
   }
   velocity = FLAP;
@@ -236,6 +241,10 @@ function restartGame() {
   overlayTitle.textContent = 'CYBER FLAP';
   overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
   overlayEl.classList.remove('hidden');
+
+  if (inputHintsEl) inputHintsEl.style.display = 'flex';
+  if (phaseHudEl) phaseHudEl.style.display = 'none';
+
   prefillPipes(scene);
   lastSpawn = performance.now();
   prevTime = performance.now();
@@ -316,16 +325,14 @@ function loop(now) {
 
     // Update stamina HUD (shown once phase is first used)
     if (phaseUsed) {
-      const barEl = document.getElementById('phase-hud');
-      const fillEl = document.getElementById('phase-bar-fill');
-      if (barEl) barEl.style.display = 'block';
-      if (fillEl) {
+      if (phaseHudEl) phaseHudEl.style.display = 'block';
+      if (phaseBarFillEl) {
         const pct = phaseStamina / CONFIG.PHASE.MAX_DURATION;
-        fillEl.style.width = (pct * 100) + '%';
-        if (pct > 0.3) fillEl.style.background = '#00ffff';
-        else if (pct > 0.1) fillEl.style.background = '#ffcc00';
-        else fillEl.style.background = '#ff2200';
-        fillEl.style.animation = phaseCooldown > 0 ? 'flicker 0.3s infinite' : 'none';
+        phaseBarFillEl.style.width = (pct * 100) + '%';
+        if (pct > 0.3) phaseBarFillEl.style.background = '#00ffff';
+        else if (pct > 0.1) phaseBarFillEl.style.background = '#ffcc00';
+        else phaseBarFillEl.style.background = '#ff2200';
+        phaseBarFillEl.style.animation = phaseCooldown > 0 ? 'flicker 0.3s infinite' : 'none';
       }
     }
 
