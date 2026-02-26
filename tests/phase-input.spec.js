@@ -48,3 +48,49 @@ test('Flap and phase work simultaneously', async ({ page }) => {
   await page.keyboard.up('d');
   expect(phasing).toBe(true);
 });
+
+test('Touch tap does not synthesize a mousedown event (double-flap regression)', async ({ page }) => {
+  test.setTimeout(15000);
+
+  await page.goto('http://localhost:3457/index.html');
+  await page.waitForSelector('canvas');
+  await page.evaluate(() => window.__FLAPPY_START_QUIET());
+  await page.waitForFunction(() => window.__FLAPPY_STARTED === true, { timeout: 5000 });
+
+  // Count how many times mousedown fires after a synthetic touch on the left side.
+  // With the fix (e.preventDefault() on touchstart), this should be 0.
+  const mousedownCount = await page.evaluate(() => {
+    return new Promise((resolve) => {
+      let count = 0;
+      document.addEventListener('mousedown', () => { count++; }, { capture: true });
+
+      // Simulate a left-side tap via TouchEvent
+      const target = document.body;
+      const touch = new Touch({
+        identifier: Date.now(),
+        target,
+        clientX: window.innerWidth * 0.25, // left quarter
+        clientY: window.innerHeight * 0.5,
+        radiusX: 10, radiusY: 10,
+        rotationAngle: 0, force: 1,
+      });
+      target.dispatchEvent(new TouchEvent('touchstart', {
+        changedTouches: [touch],
+        touches: [touch],
+        bubbles: true,
+        cancelable: true,
+      }));
+      target.dispatchEvent(new TouchEvent('touchend', {
+        changedTouches: [touch],
+        touches: [],
+        bubbles: true,
+        cancelable: true,
+      }));
+
+      // Wait 300ms for any synthetic mouse events to fire
+      setTimeout(() => resolve(count), 300);
+    });
+  });
+
+  expect(mousedownCount).toBe(0);
+});
