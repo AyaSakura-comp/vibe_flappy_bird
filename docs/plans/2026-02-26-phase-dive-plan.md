@@ -12,6 +12,34 @@
 
 ---
 
+## Art/Theme Consistency Verification Protocol
+
+Every task that modifies visuals (Tasks 3, 5, 6, 7, 9, 11) **must** include a `/compare-before-after-with-video` theme consistency check **in addition to** the feature-specific video verification. This is a separate verification step with a standardized prompt.
+
+**Standard Theme Consistency Prompt** (used on every visual task):
+
+> "Compare the BEFORE and AFTER gameplay videos for art/theme consistency. Verify the AFTER video preserves ALL of the following synthwave aesthetic elements from the BEFORE video:
+> 1. Dark purple/indigo background sky (hex ~#1a0044)
+> 2. Neon grid floor with magenta/cyan glow scrolling toward camera
+> 3. Purple cylindrical pipes with magenta caps and cyan inner rings
+> 4. Cyan/blue glowing ship (when in solid/default state)
+> 5. Neon bloom/glow post-processing on all bright elements
+> 6. CRT/VHS film grain and scanline overlay
+> 7. Skyscrapers with neon-lit windows along the left diagonal
+> 8. Retro sliced sun (orange/red) in the deep background
+> 9. Wireframe mountains behind the skyline
+> 10. Digital rain particles falling in the background
+> 11. Cyan score counter with glow at top center
+> 12. Overall color palette: cyan, magenta, purple, orange on dark background
+>
+> Report any element that is missing, degraded, color-shifted, or visually broken in the AFTER video. A PASS means all 12 elements are preserved. Any missing element is a FAIL."
+
+**When to run:** After the feature-specific `/verify-video` or `/compare-before-after` check passes, run this theme check as a separate `/compare-before-after-with-video` call using the same AFTER video against `golden/baseline-pre-phase-dive.webm`.
+
+**If theme check FAILS:** Fix the regression before committing. Do NOT commit with a broken aesthetic.
+
+---
+
 ### Task 0: Record Baseline Video
 
 **Purpose:** Capture "before" gameplay video for `/compare-before-after-with-video` comparisons in later tasks.
@@ -649,14 +677,21 @@ test('Laser nets appear in pipe gaps after warmup', async ({ page }) => {
 
 Run: `node node_modules/@playwright/test/cli.js test tests/laser-visual.spec.js`
 
-**Step 8: Video verify with `/compare-before-after-with-video`**
+**Step 8: Video verify with `/compare-before-after-with-video` (feature check)**
 
 Use `/compare-before-after-with-video`:
 - Before: `golden/baseline-pre-phase-dive.webm`
 - After: the video from `test-results/` for laser-visual test
 - Prompt: "Compare these two gameplay videos. The AFTER video should show red/yellow glowing laser net barriers inside the gaps between purple pipes. The BEFORE video should have no such laser nets. Confirm the laser nets are visually distinct and visible."
 
-**Step 9: Commit**
+**Step 9: Theme consistency check with `/compare-before-after-with-video`**
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: same video from Step 8
+- If FAIL: fix the regression before committing.
+
+**Step 10: Commit**
 
 ```bash
 git add js/pipes.js js/game.js js/laser.js tests/unit.test.js tests/laser-visual.spec.js
@@ -1136,12 +1171,20 @@ test('Overheat: stamina depletes and forces unphase after MAX_DURATION', async (
 Run: `npm run test:unit && node node_modules/@playwright/test/cli.js test tests/overheat.spec.js`
 Expected: ALL PASS.
 
-**Step 8: Video verify with `/verify-video`**
+**Step 8: Video verify with `/verify-video` (feature check)**
 
 Run: `node node_modules/@playwright/test/cli.js test tests/overheat.spec.js`
 Use `/verify-video` on the recorded video with prompt: "Verify this shows: (1) a game starting, (2) a stamina bar appearing at the bottom of the screen, (3) the bar draining while a key is held, (4) the bar reaching empty, (5) the bar recharging after a brief cooldown."
 
-**Step 9: Commit**
+**Step 9: Theme consistency check with `/compare-before-after-with-video`**
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: overheat test video from Step 8
+- Verify the stamina bar HUD doesn't obscure or degrade any synthwave elements.
+- If FAIL: fix the regression before committing.
+
+**Step 10: Commit**
 
 ```bash
 git add js/game.js tests/unit.test.js tests/overheat.spec.js
@@ -1359,7 +1402,7 @@ test('Phase visual: ship appearance changes when phasing', async ({ page }) => {
 });
 ```
 
-**Step 8: Run Playwright test and video verify**
+**Step 8: Run Playwright test and video verify (feature check)**
 
 Run: `node node_modules/@playwright/test/cli.js test tests/phase-visuals.spec.js`
 
@@ -1368,7 +1411,15 @@ Use `/compare-before-after-with-video`:
 - After: video from `test-results/` for phase-visuals test
 - Prompt: "Compare these videos. The AFTER video should show: (1) the ship turning translucent/white when phasing, (2) a particle burst on phase transitions, (3) the trail changing color from cyan to white/magenta when phased, (4) the ship returning to normal cyan when phase ends. The BEFORE video should show none of these effects."
 
-**Step 9: Commit**
+**Step 9: Theme consistency check with `/compare-before-after-with-video`**
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: same phase-visuals test video
+- Critical check: when ship is in solid state (not phasing), it must still be cyan/blue — verify the phase-off restoration doesn't leave residual white/transparency.
+- If FAIL: fix the regression before committing.
+
+**Step 10: Commit**
 
 ```bash
 git add js/game.js js/trail.js tests/unit.test.js tests/phase-visuals.spec.js
@@ -1564,12 +1615,19 @@ test('Phased ship still dies on pipe collision', async ({ page }) => {
 Run: `node node_modules/@playwright/test/cli.js test tests/collision-phase.spec.js`
 Expected: ALL PASS.
 
-**Step 5: Video verify**
+**Step 5: Video verify (feature check)**
 
 Use `/verify-video` on the "phased ship passes through laser" test video:
 - Prompt: "Verify this shows: a ship that turns translucent/white (phased state) as it approaches red/yellow laser barriers between pipes, passes safely through them, then returns to solid cyan state. The ship should survive multiple pipe passages."
 
-**Step 6: Commit**
+**Step 6: Theme consistency check with `/compare-before-after-with-video`**
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: the "phased ship passes through laser" test video
+- If FAIL: fix the regression before committing.
+
+**Step 7: Commit**
 
 ```bash
 git add tests/unit.test.js tests/collision-phase.spec.js
@@ -1863,14 +1921,22 @@ Expected: PASS with score >= 20.
 Use `/verify-video` on the pilot test video:
 - Prompt: "Verify this shows a complete Phase Dive gameplay experience: (1) a ship flying through purple pipes, (2) red/yellow laser nets visible in some pipe gaps, (3) the ship turning translucent white (phasing) when approaching laser nets, (4) the ship passing safely through laser nets while phased, (5) a stamina bar visible at the bottom of the screen, (6) the ship returning to solid cyan after passing lasers, (7) the ship surviving 20+ pipes."
 
-**Step 4: Compare with baseline using `/compare-before-after-with-video`**
+**Step 4: Compare with baseline using `/compare-before-after-with-video` (feature check)**
 
 Use `/compare-before-after-with-video`:
 - Before: `golden/baseline-pre-phase-dive.webm`
 - After: pilot test video
 - Prompt: "Compare the before and after gameplay videos. The AFTER should have all of these additions compared to BEFORE: (1) red/yellow laser net barriers in pipe gaps, (2) ship phase visual effect (translucent white), (3) stamina bar HUD at bottom, (4) phase transition particle bursts, (5) trail color changes during phase. Both should have the same synthwave aesthetic, purple pipes, and core flap mechanic."
 
-**Step 5: Commit**
+**Step 5: Final theme consistency check with `/compare-before-after-with-video`**
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: same pilot test video
+- This is the **final cumulative check** — all Phase Dive features are active, so this validates that the complete feature set preserves the synthwave aesthetic.
+- If FAIL: fix the regression before committing.
+
+**Step 6: Commit**
 
 ```bash
 git add tests/phase-dive-pilot.spec.js
@@ -1945,7 +2011,18 @@ In `restartGame()`, show hints again:
 Run: `npm run test:unit && node node_modules/@playwright/test/cli.js test`
 Expected: ALL PASS.
 
-**Step 3: Commit**
+**Step 3: Final full-suite theme consistency check**
+
+Run the Phase Dive pilot test to get a fresh video with all features active:
+Run: `node node_modules/@playwright/test/cli.js test tests/phase-dive-pilot.spec.js`
+
+Use `/compare-before-after-with-video` with the **Standard Theme Consistency Prompt** (see protocol above).
+- Before: `golden/baseline-pre-phase-dive.webm`
+- After: fresh pilot test video
+- This is the **final gate** — confirms the complete Phase Dive implementation preserves the synthwave aesthetic end-to-end.
+- If FAIL: fix before committing.
+
+**Step 4: Commit**
 
 ```bash
 git add js/game.js
@@ -1956,21 +2033,22 @@ git commit -m "fix: hide input hints during gameplay, show on restart"
 
 ## Summary
 
-| Task | Description | Unit Tests | E2E Tests | Video Verify |
-|------|------------|-----------|-----------|-------------|
-| 0 | Baseline video recording | — | baseline-recording.spec.js | /verify-video |
-| 1 | CONFIG.PHASE + CONFIG.LASER | 7 tests | — | — |
-| 2 | js/laser.js module | 10 tests | — | — |
-| 3 | Laser net pipe integration | 2 tests | laser-visual.spec.js | /compare-before-after |
-| 4 | Split-screen input + phase state | — | phase-input.spec.js (2 tests) | — |
-| 5 | Overheat stamina system | 6 tests | overheat.spec.js | /verify-video |
-| 6 | Phase visual feedback | 2 tests | phase-visuals.spec.js | /compare-before-after |
-| 7 | Collision rules (4 combos) | 5 tests | collision-phase.spec.js (3 tests) | /verify-video |
-| 8 | Audio placeholders | 2 tests | — | — |
-| 9 | Phase Dive pilot | — | phase-dive-pilot.spec.js | /verify-video + /compare |
-| 10 | Update existing high-score pilot | — | high-score.spec.js | — |
-| 11 | Hide input hints | — | full suite | — |
+| Task | Description | Unit Tests | E2E Tests | Feature Video | Theme Check |
+|------|------------|-----------|-----------|---------------|-------------|
+| 0 | Baseline video recording | — | baseline-recording.spec.js | /verify-video | — (IS the baseline) |
+| 1 | CONFIG.PHASE + CONFIG.LASER | 7 tests | — | — | — |
+| 2 | js/laser.js module | 10 tests | — | — | — |
+| 3 | Laser net pipe integration | 2 tests | laser-visual.spec.js | /compare | /compare (theme) |
+| 4 | Split-screen input + phase state | — | phase-input.spec.js (2) | — | — |
+| 5 | Overheat stamina system | 6 tests | overheat.spec.js | /verify-video | /compare (theme) |
+| 6 | Phase visual feedback | 2 tests | phase-visuals.spec.js | /compare | /compare (theme) |
+| 7 | Collision rules (4 combos) | 5 tests | collision-phase.spec.js (3) | /verify-video | /compare (theme) |
+| 8 | Audio placeholders | 2 tests | — | — | — |
+| 9 | Phase Dive pilot | — | phase-dive-pilot.spec.js | /verify + /compare | /compare (theme, final cumulative) |
+| 10 | Update existing high-score pilot | — | high-score.spec.js | — | — |
+| 11 | Hide input hints | — | full suite | — | /compare (theme, final gate) |
 
 **Total new tests:** ~34 unit tests + 10 E2E tests
+**Theme consistency checks:** 6 (Tasks 3, 5, 6, 7, 9, 11)
 **New files:** `js/laser.js`, 7 new spec files
 **Modified files:** `constants.js`, `game.js`, `pipes.js`, `trail.js`, `audio.js`, `index.html`, `unit.test.js`, `high-score.spec.js`
