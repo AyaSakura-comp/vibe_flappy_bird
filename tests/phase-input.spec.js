@@ -100,8 +100,10 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
   expect(mousedownCount).toBe(0);
 
   // Also verify the touch DID trigger a flap (feature still works).
-  // FLAP = -0.25 in this game's physics (negative = upward). After a flap + 300ms,
-  // gravity (0.019/frame) has not yet fully reversed the velocity, so it remains < 0.
+  // FLAP = -0.25 in this game's physics (negative = upward).
+  // Read immediately after the Promise resolves — the value is captured before
+  // the game loop has fully reversed it. If this ever becomes flaky, read
+  // __FLAPPY_VELOCITY right after dispatchEvent instead of after the 300ms wait.
   const velocityAfter = await page.evaluate(() => window.__FLAPPY_VELOCITY);
   expect(velocityAfter).toBeLessThan(0);
 
