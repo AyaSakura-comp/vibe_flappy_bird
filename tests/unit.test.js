@@ -779,6 +779,36 @@ describe('audio', () => {
   });
 });
 
+describe('trail phased mode', () => {
+  it('updateTrail accepts phased parameter without error', () => {
+    const scene = mockScene();
+    const trail = trailMod.createTrail(scene);
+    assert.doesNotThrow(() => {
+      trailMod.updateTrail(trail, 0, 0, -0.3, true);
+      trailMod.updateTrail(trail, 0, 0, -0.3, true);
+    });
+  });
+
+  it('phased trail has different colors than solid trail', () => {
+    const scene = mockScene();
+    const solidTrail = trailMod.createTrail(scene);
+    for (let i = 0; i < 6; i++) trailMod.updateTrail(solidTrail, 0, i * 0.1, -0.3, false);
+    const solidColors = [...solidTrail.geometry.attributes.color.array];
+
+    const scene2 = mockScene();
+    const phasedTrail = trailMod.createTrail(scene2);
+    for (let i = 0; i < 6; i++) trailMod.updateTrail(phasedTrail, 0, i * 0.1, -0.3, true);
+    const phasedColors = [...phasedTrail.geometry.attributes.color.array];
+
+    // At least some color values should differ
+    let differs = false;
+    for (let i = 0; i < solidColors.length; i++) {
+      if (Math.abs(solidColors[i] - phasedColors[i]) > 0.01) { differs = true; break; }
+    }
+    assert.ok(differs, 'phased trail colors should differ from solid trail colors');
+  });
+});
+
 // ── laser.js ─────────────────────────────────────────────────────────────
 describe('laser.js', () => {
   it('createLaserNet returns mesh, hitTop, hitBot', () => {
@@ -856,9 +886,15 @@ describe('laser.js', () => {
 
   it('shouldSpawnLaser can return true after warmup with chance=1', () => {
     const origChance = CONFIG.LASER.SPAWN_CHANCE;
+    const origMax = CONFIG.LASER.MAX_CHANCE;
     CONFIG.LASER.SPAWN_CHANCE = 1.0;
-    assert.equal(laserMod.shouldSpawnLaser(5, 0), true);
-    CONFIG.LASER.SPAWN_CHANCE = origChance;
+    CONFIG.LASER.MAX_CHANCE = 1.0;
+    try {
+      assert.equal(laserMod.shouldSpawnLaser(5, 0), true);
+    } finally {
+      CONFIG.LASER.SPAWN_CHANCE = origChance;
+      CONFIG.LASER.MAX_CHANCE = origMax;
+    }
   });
 
   it('dynamic difficulty increases chance with score', () => {

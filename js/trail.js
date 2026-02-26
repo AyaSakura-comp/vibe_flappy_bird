@@ -36,13 +36,16 @@ export function createTrail(scene) {
   return points;
 }
 
-export function updateTrail(points, x, y, z) {
+export function updateTrail(points, x, y, z, phased = false) {
   points.userData.frame++;
   if (points.userData.frame % SAMPLE_EVERY !== 0) return;
 
   const history = points.userData.history;
   history.unshift({ x, y, z });
   if (history.length > TRAIL_LENGTH) history.pop();
+
+  points.userData.phased = phased;
+  points.material.size = phased ? 0.4 : 0.28;
 
   _rebuildBuffer(points);
 }
@@ -75,9 +78,18 @@ function _rebuildBuffer(points) {
     pos[i * 3]     = history[i].x + wobble;
     pos[i * 3 + 1] = history[i].y;
     pos[i * 3 + 2] = history[i].z + i * 0.18;
-    col[i * 3]     = 0;
-    col[i * 3 + 1] = 1 - t * 0.9;
-    col[i * 3 + 2] = 1 - t * 0.9;
+
+    if (points.userData.phased) {
+      // White/magenta alternating
+      const isOdd = i % 2 === 0;
+      col[i * 3]     = isOdd ? 1.0 : 1.0;                    // R
+      col[i * 3 + 1] = isOdd ? 1.0 * (1 - t * 0.5) : 0;     // G
+      col[i * 3 + 2] = isOdd ? 1.0 * (1 - t * 0.5) : 1.0;   // B
+    } else {
+      col[i * 3]     = 0;
+      col[i * 3 + 1] = 1 - t * 0.9;
+      col[i * 3 + 2] = 1 - t * 0.9;
+    }
   }
 
   points.geometry.attributes.position.needsUpdate = true;

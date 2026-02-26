@@ -51,6 +51,11 @@ let phaseStamina  = CONFIG.PHASE.MAX_DURATION;
 let phaseCooldown = 0;
 let phaseUsed     = false; // tracks if phase was ever activated (for HUD visibility)
 
+// Phase transition VFX
+let wasPhasing = false;
+let lastPhaseVfxTime = 0;  // debounce VFX spam
+const PHASE_VFX_COOLDOWN = 100; // ms — minimum gap between phase transition VFX
+
 // Screen shake state
 let shakeAmp = 0;     // current shake amplitude (decays to 0)
 const SHAKE_DECAY = 0.92; // multiplier per frame at 60fps (~2s duration)
@@ -196,6 +201,7 @@ updateCameraProjection();
 // ── Game over / restart ──────────────────────────────────────────────────
 function triggerGameOver() {
   gameOver = true;
+  phasing = false;
   pauseBgm(audio);
   shakeAmp = SHAKE_INIT;
   spawnExplosion(
@@ -222,6 +228,7 @@ function restartGame() {
   resetTrail(trail);
   velocity = 0; score = 0; started = false; gameOver = false; shakeAmp = 0;
   phasing = false; phaseStamina = CONFIG.PHASE.MAX_DURATION; phaseCooldown = 0; phaseUsed = false;
+  wasPhasing = false;
   scoreEl.textContent = '0';
   overlayTitle.textContent = 'CYBER FLAP';
   overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
@@ -243,9 +250,45 @@ function loop(now) {
     const gravScale = window.__FLAPPY_GRAVITY_SCALE ?? 1;
     velocity += GRAVITY * dt * gravScale;
     birdGroup.position.y -= velocity * dt;
-    updateTrail(trail, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z - 0.3);
+
+    // Phase transition VFX (debounced to prevent memory leak from rapid toggling)
+    if (phasing !== wasPhasing) {
+      if (now - lastPhaseVfxTime > PHASE_VFX_COOLDOWN) {
+        spawnExplosion(scene, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z);
+        lastPhaseVfxTime = now;
+      }
+      wasPhasing = phasing;
+    }
+
+    updateTrail(trail, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z - 0.3, phasing);
     const targetRot = Math.max(-0.6, Math.min(0.6, velocity * 4));
     birdGroup.rotation.z += (targetRot - birdGroup.rotation.z) * 0.15 * dt;
+
+    // Phase visual feedback on bird
+    const bodyMat = birdGroup.children[0].material;
+    const wingMat = birdGroup.children[3].material;
+    if (phasing) {
+      bodyMat.transparent = true;
+      bodyMat.opacity = 0.4;
+      bodyMat.emissive.setHex(0xffffff);
+      bodyMat.emissiveIntensity = 1.5;
+      wingMat.transparent = true;
+      wingMat.opacity = 0.4;
+      wingMat.emissive.setHex(0xffffff);
+      eng.material.color.setHex(0xffffff);
+      // Subtle scale pulse
+      const pulse = 1.0 + Math.sin(now * 0.025) * 0.05;
+      birdGroup.scale.set(pulse, pulse, pulse);
+    } else {
+      bodyMat.transparent = false;
+      bodyMat.opacity = 1.0;
+      bodyMat.emissive.setHex(0x00ccff);
+      bodyMat.emissiveIntensity = 0.6;
+      wingMat.transparent = false;
+      wingMat.opacity = 1.0;
+      wingMat.emissive.setHex(0x0066aa);
+      birdGroup.scale.set(1, 1, 1);
+    }
 
     // ── Overheat tick ─────────────────────────────────────────────────────
     const dtSec = dt / 60; // dt is in frames at 60fps, convert to seconds
