@@ -20,7 +20,6 @@ js/
   game.js           — Main orchestrator: Game loop, State management, Input, Test API
 tests/
   unit.test.js      — 96 unit tests (node:test) covering all modules
-  input-debounce.spec.js — Mobile fix: verify frame-based input & debouncing
   high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes (updated for lasers)
   phase-dive-pilot.spec.js — Specialized Phase Dive pilot: handles laser navigation
   collision-phase.spec.js — Collision rules: solid/phased vs pipe/laser
@@ -34,7 +33,6 @@ tests/
   baseline-recording.spec.js — Pre-feature reference recording
 docs/plans/         — Design and implementation plan documents
 golden/
-  task12-input-debounce.webm — Visual proof of input debouncing (mobile chatter fix)
   final-phase-dive.webm — Complete feature verification video (Cumulative)
   baseline-pre-phase-dive.webm — Reference video before Phase Dive
 package.json
@@ -46,29 +44,18 @@ package.json
 - **Centralized Config**: All game tuning (Gravity, Speed, Colors, Phase, and Lasers) is managed in `js/constants.js`.
 - **Mechanics**:
   - **Phase Dive**: Holding 'D' (or right-screen) makes the ship translucent and immune to **Laser Nets**.
-  - **Input Debounce**: Mobile touch "chatter" is filtered via a 100ms cooldown and frame-based input queuing in `js/game.js`.
   - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
   - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes.
 - **Visual Identity (Synthwave)**:
   - **UI**: Cyberpunk-themed overlays with dynamic input hints.
-  - **Post-Processing**: Heavy stack including high-intensity Bloom (1.4 strength), Film Grain, and Scanlines.
+  - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
 - **Performance**: Optimized game loop with DOM element caching and debounced VFX spawning.
 - **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
   - `__FLAPPY_BIRD_Y`, `__FLAPPY_VELOCITY`, `__FLAPPY_SCORE`, `__FLAPPY_STARTED`, `__FLAPPY_OVER`
+  - `__FLAPPY_NEXT_GAP_TOP/BOT`, `__FLAPPY_NEXT_PIPE_Z`, `__FLAPPY_NEXT_LASER`
   - `__FLAPPY_PHASING`, `__FLAPPY_PHASE_STAMINA`, `__FLAPPY_PHASE_COOLDOWN`
+  - `__FLAPPY_PHASE_ACTIVATE()`, `__FLAPPY_PHASE_DEACTIVATE()`
   - `__FLAPPY_START_QUIET`, `__FLAPPY_RESTART`, `__FLAPPY_CLEAR_PIPES`, `__FLAPPY_GRAVITY_SCALE`
-
-## 🛠 Testing & Verification Philosophy
-
-This project follows a strict **Verify Before Commit** protocol:
-
-1.  **TDD (Unit):** Pure functions (collision, stamina ticks, laser chance) must have 100% test coverage in `tests/unit.test.js`.
-2.  **E2E (Behavior):** Complex interactions (phasing through lasers, input debouncing) are verified via Playwright using automated pilots.
-3.  **Visual Verification (Golden):** Visual features require a recorded video (`golden/`) and a "Theme Consistency Check" against the `baseline-pre-phase-dive.webm`.
-4.  **Aesthetic Mandates:**
-    - Dark purple sky (~#1a0044)
-    - Cyan/Magenta/Purple primary palette.
-    - High-intensity bloom (STRENGTH: 1.4, RADIUS: 1.2).
 
 ## Running
 
@@ -76,9 +63,12 @@ This project follows a strict **Verify Before Commit** protocol:
 # Serve locally
 node node_modules/http-server/bin/http-server . -p 3457 --cors -c-1
 
-# Run all tests
+# Run tests
 node node_modules/@playwright/test/cli.js test
-
-# Run unit tests only
-npm run test:unit
 ```
+
+## Test Notes
+
+- **Automated High-Score**: `tests/high-score.spec.js` and `tests/phase-dive-pilot.spec.js` use zero-latency pilots to record 20+ pipe navigation at 2× speed (`window.__GAME_CONFIG.PIPES.SPEED = 0.32`).
+- **Unit Tests**: `npm run test:unit` runs 96 tests using a local Three.js mock.
+- **Videos**: Playwright records videos of all E2E test runs. Standardized theme consistency protocol is used to verify that new features preserve the synthwave aesthetic.
