@@ -77,10 +77,28 @@ function tryRestart() {
   if (gameOver && !overlayEl.classList.contains('hidden')) restartGame();
 }
 
+// Shared: transition from phased → solid, checking for laser overlap (instant death).
+// Called by both setPhasing(false) and the stamina-depletion path in the game loop.
+function forceUnphase() {
+  if (!phasing) return;
+  for (const p of pipes) {
+    if (checkLaserCollision(birdGroup.position.y, p)) {
+      phasing = false;
+      triggerGameOver();
+      return;
+    }
+  }
+  phasing = false;
+}
+
 function setPhasing(active) {
   if (gameOver || !started) return;
   if (active && phaseCooldown > 0) return;  // locked during cooldown
   if (active && phaseStamina <= 0) return;   // depleted
+  if (!active && phasing) {
+    forceUnphase();
+    return;
+  }
   phasing = active;
   if (active) phaseUsed = true;
 }
@@ -222,11 +240,46 @@ function loop(now) {
   prevTime = now;
 
   if (started && !gameOver) {
-    velocity += GRAVITY * dt;
+    const gravScale = window.__FLAPPY_GRAVITY_SCALE ?? 1;
+    velocity += GRAVITY * dt * gravScale;
     birdGroup.position.y -= velocity * dt;
     updateTrail(trail, birdGroup.position.x, birdGroup.position.y, birdGroup.position.z - 0.3);
     const targetRot = Math.max(-0.6, Math.min(0.6, velocity * 4));
     birdGroup.rotation.z += (targetRot - birdGroup.rotation.z) * 0.15 * dt;
+
+    // ── Overheat tick ─────────────────────────────────────────────────────
+    const dtSec = dt / 60; // dt is in frames at 60fps, convert to seconds
+    if (phasing && phaseCooldown <= 0) {
+      phaseStamina -= CONFIG.PHASE.DRAIN_RATE * dtSec;
+      if (phaseStamina <= 0) {
+        phaseStamina = 0;
+        forceUnphase();  // checks laser overlap before unphasing
+        if (gameOver) return;
+        phaseCooldown = CONFIG.PHASE.COOLDOWN;
+      }
+    }
+    if (!phasing && phaseCooldown > 0) {
+      phaseCooldown -= dtSec;
+      if (phaseCooldown < 0) phaseCooldown = 0;
+    }
+    if (!phasing && phaseCooldown <= 0) {
+      phaseStamina = Math.min(CONFIG.PHASE.MAX_DURATION, phaseStamina + CONFIG.PHASE.CHARGE_RATE * dtSec);
+    }
+
+    // Update stamina HUD (shown once phase is first used)
+    if (phaseUsed) {
+      const barEl = document.getElementById('phase-hud');
+      const fillEl = document.getElementById('phase-bar-fill');
+      if (barEl) barEl.style.display = 'block';
+      if (fillEl) {
+        const pct = phaseStamina / CONFIG.PHASE.MAX_DURATION;
+        fillEl.style.width = (pct * 100) + '%';
+        if (pct > 0.3) fillEl.style.background = '#00ffff';
+        else if (pct > 0.1) fillEl.style.background = '#ffcc00';
+        else fillEl.style.background = '#ff2200';
+        fillEl.style.animation = phaseCooldown > 0 ? 'flicker 0.3s infinite' : 'none';
+      }
+    }
 
     eng.material.color.setHSL((now * 0.001) % 1, 1, 0.6);
 
@@ -253,6 +306,11 @@ function loop(now) {
       }
 
       if (checkCollision(birdGroup.position.y, birdGroup.position.x, p)) {
+        triggerGameOver(); return;
+      }
+
+      // Laser collision — phasing bypasses
+      if (!phasing && checkLaserCollision(birdGroup.position.y, p)) {
         triggerGameOver(); return;
       }
     }
@@ -325,6 +383,14 @@ window.__FLAPPY_START_QUIET = () => {
 window.__FLAPPY_RESTART = () => {
   if (gameOver) restartGame();
 };
+
+// ── Test API: clear all pipes (for stamina/phase tests that need no collisions) ──
+window.__FLAPPY_CLEAR_PIPES = () => {
+  resetPipes(scene);
+};
+
+// ── Test API: gravity multiplier (0 = freeze bird Y, for isolated mechanic tests) ──
+window.__FLAPPY_GRAVITY_SCALE = 1;
 
 // ── Init ─────────────────────────────────────────────────────────────────
 prefillPipes(scene);

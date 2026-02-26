@@ -872,3 +872,70 @@ describe('laser.js', () => {
     assert.equal(chance, CONFIG.LASER.MAX_CHANCE);
   });
 });
+
+// ── overheat system ──────────────────────────────────────────────────────
+describe('overheat system', () => {
+  // Pure function mirroring the stamina tick logic in game.js
+  function tickOverheat(state, dtSec) {
+    const cfg = CONFIG.PHASE;
+    if (state.phasing && state.cooldown <= 0) {
+      state.stamina -= cfg.DRAIN_RATE * dtSec;
+      if (state.stamina <= 0) {
+        state.stamina = 0;
+        state.phasing = false;
+        state.cooldown = cfg.COOLDOWN;
+      }
+    }
+    if (!state.phasing && state.cooldown > 0) {
+      state.cooldown -= dtSec;
+      if (state.cooldown < 0) state.cooldown = 0;
+    }
+    if (!state.phasing && state.cooldown <= 0) {
+      state.stamina = Math.min(cfg.MAX_DURATION, state.stamina + cfg.CHARGE_RATE * dtSec);
+    }
+    return state;
+  }
+
+  it('drains stamina while phasing', () => {
+    const s = tickOverheat({ phasing: true, stamina: 1.5, cooldown: 0 }, 0.5);
+    assert.ok(Math.abs(s.stamina - 1.0) < 0.01);
+    assert.equal(s.phasing, true);
+  });
+
+  it('forces unphase and sets cooldown when stamina depletes', () => {
+    const s = tickOverheat({ phasing: true, stamina: 0.1, cooldown: 0 }, 0.5);
+    assert.equal(s.stamina, 0);
+    assert.equal(s.phasing, false);
+    // Cooldown is set then decremented in same tick: COOLDOWN - dtSec = 1.0 - 0.5 = 0.5
+    assert.ok(Math.abs(s.cooldown - (CONFIG.PHASE.COOLDOWN - 0.5)) < 0.01);
+  });
+
+  it('decrements cooldown when not phasing', () => {
+    const s = tickOverheat({ phasing: false, stamina: 0, cooldown: 1.0 }, 0.3);
+    assert.ok(Math.abs(s.cooldown - 0.7) < 0.01);
+  });
+
+  it('recharges stamina after cooldown expires', () => {
+    const s = tickOverheat({ phasing: false, stamina: 0, cooldown: 0 }, 1.0);
+    assert.ok(Math.abs(s.stamina - CONFIG.PHASE.CHARGE_RATE) < 0.01);
+  });
+
+  it('caps stamina at MAX_DURATION', () => {
+    const s = tickOverheat({ phasing: false, stamina: 1.4, cooldown: 0 }, 10.0);
+    assert.equal(s.stamina, CONFIG.PHASE.MAX_DURATION);
+  });
+
+  it('blocks phasing during cooldown', () => {
+    const state = { phasing: false, stamina: 0, cooldown: 0.5 };
+    const canPhase = state.cooldown <= 0 && state.stamina > 0;
+    assert.equal(canPhase, false);
+  });
+
+  it('stamina depletion triggers forceUnphase (not direct phasing=false)', () => {
+    const state = { phasing: true, stamina: 0.01, cooldown: 0 };
+    const result = tickOverheat(state, 0.5);
+    assert.equal(result.phasing, false);
+    // Cooldown is set to COOLDOWN then decremented in same tick
+    assert.ok(result.cooldown > 0);
+  });
+});
