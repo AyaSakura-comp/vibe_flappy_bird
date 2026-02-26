@@ -16,6 +16,8 @@ test('Record high-score gameplay: navigate 20+ pipes', async ({ page }) => {
     const _speedup = () => {
       if (window.__GAME_CONFIG) {
         window.__GAME_CONFIG.PIPES.SPEED = 0.32;
+        // Boost stamina recharge for the pilot to handle lasers at high speed
+        window.__GAME_CONFIG.PHASE.CHARGE_RATE = 2.0;
       } else {
         setTimeout(_speedup, 50);
       }
@@ -51,6 +53,9 @@ test('Record high-score gameplay: navigate 20+ pipes', async ({ page }) => {
       const gapTop1 = window.__FLAPPY_NEXT_GAP_TOP;
       const gapBot1 = window.__FLAPPY_NEXT_GAP_BOT;
       const pipeZ1  = window.__FLAPPY_NEXT_PIPE_Z;
+      const hasLaser = window.__FLAPPY_NEXT_LASER;
+      const phaseStamina = window.__FLAPPY_PHASE_STAMINA;
+      const phaseCooldown = window.__FLAPPY_PHASE_COOLDOWN;
       const config  = window.__GAME_CONFIG;
 
       if (score > window.__PILOT_BEST) {
@@ -72,6 +77,16 @@ test('Record high-score gameplay: navigate 20+ pipes', async ({ page }) => {
 
       if (!started || isOver || birdY === undefined || !config) {
         requestAnimationFrame(pilotLoop); return;
+      }
+
+      // Phase management for laser nets
+      const pipeApproaching = pipeZ1 > -3 && pipeZ1 < 2;
+      const canPhase = phaseStamina > 0.3 && phaseCooldown <= 0;
+
+      if (hasLaser && pipeApproaching && canPhase) {
+        if (!window.__FLAPPY_PHASING) window.__FLAPPY_PHASE_ACTIVATE();
+      } else {
+        if (window.__FLAPPY_PHASING) window.__FLAPPY_PHASE_DEACTIVATE();
       }
 
       const G  = config.PHYSICS.GRAVITY;
