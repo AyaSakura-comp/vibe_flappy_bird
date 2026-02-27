@@ -155,6 +155,9 @@ function handlePointerUp(e) {
 }
 
 document.addEventListener('pointerdown', (e) => {
+  // Prevent default browser behavior (selection, zooming, etc.)
+  if (e.cancelable) e.preventDefault();
+  
   const xRatio = e.clientX / window.innerWidth;
   activePointers.set(e.pointerId, xRatio);
   
