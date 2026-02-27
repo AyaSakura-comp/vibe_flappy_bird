@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import { createAudio, playBgm, pauseBgm, createSfx, playPhaseIn, playPhaseOut, playLaserPass, playLaserDeath } from './audio.js';
 
 const audio = createAudio();
+window.__GAME_AUDIO = audio;
 const sfx = createSfx();
 window.__GAME_SFX = sfx;
 
@@ -234,6 +235,8 @@ function restartGame() {
   birdGroup.position.set(0, 0, 0);
   birdGroup.rotation.z = 0;
   resetTrail(trail);
+  CONFIG.PIPES.SPEED = CONFIG.SPEED_SCALING.INITIAL_PIPE_SPEED;
+  CONFIG.ENVIRONMENT.PARALLAX_SPEED = CONFIG.SPEED_SCALING.INITIAL_PARALLAX_SPEED;
   velocity = 0; score = 0; started = false; gameOver = false; shakeAmp = 0;
   phasing = false; phaseStamina = CONFIG.PHASE.MAX_DURATION; phaseCooldown = 0; phaseUsed = false;
   wasPhasing = false;
@@ -358,6 +361,22 @@ function loop(now) {
         score++;
         scoreEl.textContent = score;
         if (p.laser && phasing) playLaserPass(sfx);
+
+        // Speed scaling: ramp up every N pipes (only increases, never overrides test speeds)
+        if (score % CONFIG.SPEED_SCALING.PIPES_PER_INCREASE === 0) {
+          const targetPipeSpeed = Math.min(
+            CONFIG.SPEED_SCALING.MAX_PIPE_SPEED,
+            CONFIG.SPEED_SCALING.INITIAL_PIPE_SPEED +
+              (score / CONFIG.SPEED_SCALING.PIPES_PER_INCREASE) * CONFIG.SPEED_SCALING.PIPE_SPEED_INCREMENT
+          );
+          if (targetPipeSpeed > CONFIG.PIPES.SPEED) CONFIG.PIPES.SPEED = targetPipeSpeed;
+          const targetParallax = Math.min(
+            CONFIG.SPEED_SCALING.MAX_PARALLAX_SPEED,
+            CONFIG.SPEED_SCALING.INITIAL_PARALLAX_SPEED +
+              (score / CONFIG.SPEED_SCALING.PIPES_PER_INCREASE) * CONFIG.SPEED_SCALING.PARALLAX_INCREMENT
+          );
+          if (targetParallax > CONFIG.ENVIRONMENT.PARALLAX_SPEED) CONFIG.ENVIRONMENT.PARALLAX_SPEED = targetParallax;
+        }
       }
 
       if (p.group.position.z > PIPE_REMOVE_Z) {
@@ -411,6 +430,7 @@ function loop(now) {
   window.__FLAPPY_PHASE_ACTIVATE  = () => setPhasing(true);
   window.__FLAPPY_PHASE_DEACTIVATE = () => setPhasing(false);
   window.__FLAPPY_SHAKE_AMP    = shakeAmp;
+  window.__FLAPPY_PIPE_SPEED   = CONFIG.PIPES.SPEED;
 
   // Screen shake — sine wave at ~8Hz so it's visible in compressed video
   if (shakeAmp > 0.001) {

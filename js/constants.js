@@ -10,7 +10,7 @@ export const CONFIG = {
   },
   PIPES: {
     GAP: 7.5,
-    SPEED: 0.16,
+    SPEED: 0.08,
     SPACING: 4.5,
     SPAWN_Z: -31.0,   // Aligned with prefill: 5.0 - 8 * 4.5 = -31.0
     REMOVE_Z: 15.0,
@@ -64,11 +64,20 @@ export const CONFIG = {
     GAP_FRACTION: 0.35,       // laser height = GAP * 0.25 (25% of gap)
     WIDTH: 2.0,               // mesh width (matches pipe diameter)
     DEPTH: 0.1,               // mesh Z-depth (3D thickness)
-    SCANLINE_FREQ: 50.0,       // number of color bands across height
-    SCANLINE_SPEED: 5.0,      // scanline scroll speed
+    SCANLINE_FREQ: 100.0,       // number of color bands across height
+    SCANLINE_SPEED: 400.0,      // scanline scroll speed
     PULSE_SPEED: 3.0,         // overall brightness pulse speed
     COLOR1: 0xff2200,         // primary laser color (red-orange)
     COLOR2: 0xffcc00,         // secondary laser color (yellow)
+  },
+  SPEED_SCALING: {
+    INITIAL_PIPE_SPEED: 0.08,       // starting pipe speed
+    INITIAL_PARALLAX_SPEED: 0.025,  // starting parallax speed
+    PIPES_PER_INCREASE: 5,          // increase speed every N pipes scored
+    PIPE_SPEED_INCREMENT: 0.01,     // pipe speed added per step
+    PARALLAX_INCREMENT: 0.003,      // parallax speed added per step (keeps ~31% ratio)
+    MAX_PIPE_SPEED: 0.24,           // cap pipe speed (3x initial)
+    MAX_PARALLAX_SPEED: 0.075,      // cap parallax speed (3x initial)
   },
   ENVIRONMENT: {
     PARALLAX_SPEED: 0.025,
