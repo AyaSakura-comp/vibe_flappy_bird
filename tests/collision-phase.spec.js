@@ -117,6 +117,9 @@ test('Stamina depletion while overlapping laser = instant death', async ({ page 
       if (window.__GAME_CONFIG) {
         window.__GAME_CONFIG.LASER.SPAWN_CHANCE = 1.0;
         window.__GAME_CONFIG.LASER.WARMUP_PIPES = 0;
+        // Use pipe's Z-range so forceUnphase reliably catches overlap
+        window.__GAME_CONFIG.LASER.HIT_Z_MIN = window.__GAME_CONFIG.PIPES.HIT_Z_MIN;
+        window.__GAME_CONFIG.LASER.HIT_Z_MAX = window.__GAME_CONFIG.PIPES.HIT_Z_MAX;
         window.__GAME_CONFIG.PHASE.MAX_DURATION = 0.5; // Short duration
       } else {
         setTimeout(_setup, 50);

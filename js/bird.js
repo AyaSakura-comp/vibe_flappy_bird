@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { CONFIG } from './constants.js';
 
 export function createBird(scene) {
   const birdGroup = new THREE.Group();
   scene.add(birdGroup);
 
-  const bodyGeo = new THREE.BoxGeometry(0.55, 0.22, 0.38);
+  const bodyGeo = new THREE.BoxGeometry(0.55, CONFIG.BIRD.BODY_HEIGHT, 0.38);
   const bodyMat = new THREE.MeshPhongMaterial({
     color: 0x003344,
     emissive: 0x00ccff,

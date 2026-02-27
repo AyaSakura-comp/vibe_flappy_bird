@@ -1,6 +1,6 @@
 import { CONFIG } from './constants.js';
 
-export function checkCollision(birdY, birdX, pipe, margin = 0.1) {
+export function checkCollision(birdY, birdX, pipe, margin = CONFIG.BIRD.BODY_HEIGHT / 2) {
   const pz = pipe.group.position.z;
   if (pz > CONFIG.PIPES.HIT_Z_MIN && pz < CONFIG.PIPES.HIT_Z_MAX) {
     if (Math.abs(birdX) < 1.1) {

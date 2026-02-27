@@ -72,7 +72,7 @@ export function updateLaserShader(mesh, time) {
  * @param {number} margin - bird hitbox half-height (default 0.1)
  * @returns {boolean}
  */
-export function checkLaserCollision(birdY, pipe, margin = 0.1) {
+export function checkLaserCollision(birdY, pipe, margin = CONFIG.BIRD.BODY_HEIGHT / 2) {
   if (!pipe.laser) return false;
   const pz = pipe.group.position.z;
   if (pz <= CONFIG.LASER.HIT_Z_MIN || pz >= CONFIG.LASER.HIT_Z_MAX) return false;

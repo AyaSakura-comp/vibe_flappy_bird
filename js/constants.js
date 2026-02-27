@@ -5,6 +5,9 @@ export const CONFIG = {
     FLAP: -0.25,
     TERMINAL_VELOCITY: 0.5
   },
+  BIRD: {
+    BODY_HEIGHT: 0.22,  // bird body Y dimension; collision margin = this / 2
+  },
   PIPES: {
     GAP: 7.5,
     SPEED: 0.16,
