@@ -63,8 +63,11 @@ package.json
 # Serve locally
 node node_modules/http-server/bin/http-server . -p 3457 --cors -c-1
 
-# Run tests
+# Run all E2E tests (Playwright)
 node node_modules/@playwright/test/cli.js test
+
+# Run unit tests (Node.js)
+npm run test:unit
 ```
 
 ## Test Notes
