@@ -45,14 +45,17 @@ export function createLaserNet(gapTop, gapBot) {
       varying vec2 vUv;
       void main() {
         float scanline = sin(vUv.y * uScanlineFreq + uTime * uScanlineSpeed) * 0.5 + 0.5;
-        float pulse = sin(uTime * uPulseSpeed) * 0.25 + 0.75;
-        
-        // Apply pulse only to COLOR2
-        vec3 col2_pulsed = uColor2 * pulse;
-        vec3 col = mix(uColor1, col2_pulsed, scanline);
-        
-        // Add transparency to COLOR1. COLOR2's alpha also pulses.
-        float alpha = mix(0.4, 1.0 * pulse, scanline);
+
+        // Scrolling bright line moving downward — wide and intense
+        float linePos = fract(-uTime * uPulseSpeed);
+        float line = smoothstep(0.15, 0.0, abs(vUv.y - linePos));
+
+        // Dim base, bright scanlines, blazing scroll line
+        vec3 baseCol = mix(uColor1 * 0.3, uColor2 * 0.6, scanline);
+        vec3 col = baseCol + uColor2 * line * 2.5;
+
+        float alpha = mix(0.2, 0.5, scanline) + line * 0.8;
+        alpha = clamp(alpha, 0.0, 1.0);
         gl_FragColor = vec4(col, alpha);
       }
     `,
