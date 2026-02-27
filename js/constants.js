@@ -61,6 +61,8 @@ export const CONFIG = {
     MAX_CHANCE: 0.7,          // cap at 70%
     CHANCE_PER_SCORE: 0.015,  // +1.5% per point scored
     GAP_FRACTION: 0.25,       // laser height = GAP * 0.25 (25% of gap)
+    HIT_Z_MIN: -0.05,         // laser collision zone start
+    HIT_Z_MAX: 0.05,          // laser collision zone end
   },
   ENVIRONMENT: {
     PARALLAX_SPEED: 0.025,
