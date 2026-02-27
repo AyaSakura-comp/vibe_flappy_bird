@@ -2,16 +2,54 @@ export function createAudio() {
   const audio = document.createElement('audio');
   audio.src = 'sounds/Neon_Velocity.mp3';
   audio.loop = true;
-  audio.volume = 0.6;
+  audio.volume = 0;
   return audio;
 }
 
 export function playBgm(audio) {
-  audio.play().catch(() => {});
+  audio.volume = 0;
+  audio.play().catch((e) => { console.error('Play fail:', e); });
+  console.log('playBgm: start fadeIn');
+  fadeInBgm(audio, 2000);
+}
+
+export function fadeInBgm(audio, durationMs = 2000) {
+  const targetVolume = 0.6;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / durationMs, 1);
+    audio.volume = progress * targetVolume;
+    console.log('fadeInBgm: progress=', progress, 'vol=', audio.volume);
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+export function fadeOutBgm(audio, durationMs = 1000) {
+  const startVolume = audio.volume;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / durationMs, 1);
+    audio.volume = startVolume * (1 - progress);
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      audio.pause();
+    }
+  }
+  requestAnimationFrame(tick);
 }
 
 export function pauseBgm(audio) {
-  audio.pause();
+  fadeOutBgm(audio, 800);
 }
 
 export function createSfx() {

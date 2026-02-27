@@ -40,12 +40,13 @@ package.json
 ## Architecture & Design
 
 - **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
-- **Centralized Config**: All game tuning (Gravity, Speed, Bird, Pipes, Colors, Phase, and Lasers — including shader parameters like colors, frequencies, and speeds) is managed in `js/constants.js`.
+- **Centralized Config**: All game tuning (Gravity, Speed, Bird, Pipes, Colors, Phase, Lasers, and Speed Scaling — including shader parameters like colors, frequencies, and speeds) is managed in `js/constants.js`.
 - **Mechanics**:
   - **Phase Dive**: Holding 'D' (or right-screen pointer) makes the ship translucent and immune to **Laser Nets**.
   - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
   - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders. Visual properties (width, depth, scanline frequency/speed, pulse speed, colors) are all in `CONFIG.LASER`.
   - **Collision**: Fully geometry-driven using `THREE.Box3` AABB intersection testing for both pipes and laser nets. Magic number Z-ranges have been removed.
+  - **Variable Speed Scaling**: Pipe and parallax speeds ramp every 5 pipes scored (configured in `CONFIG.SPEED_SCALING`), capping at 3x initial. Speeds reset on restart. The scaling guard only increases speed, so E2E test overrides are never clobbered.
 - **Visual Identity (Synthwave)**:
   - **UI**: Cyberpunk-themed overlays with dynamic click/tap-input hints.
   - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
@@ -56,6 +57,7 @@ package.json
   - `__FLAPPY_NEXT_GAP_TOP/BOT`, `__FLAPPY_NEXT_PIPE_Z`, `__FLAPPY_NEXT_LASER`
   - `__FLAPPY_PHASING`, `__FLAPPY_PHASE_STAMINA`, `__FLAPPY_PHASE_COOLDOWN`
   - `__FLAPPY_PHASE_ACTIVATE()`, `__FLAPPY_PHASE_DEACTIVATE()`
+  - `__FLAPPY_PIPE_SPEED`
   - `__FLAPPY_START_QUIET`, `__FLAPPY_RESTART`, `__FLAPPY_CLEAR_PIPES`, `__FLAPPY_GRAVITY_SCALE`
 
 ## Implementation Principles
