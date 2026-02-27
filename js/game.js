@@ -366,7 +366,7 @@ function loop(now) {
         continue;
       }
 
-      if (checkCollision(birdGroup.position.y, birdGroup.position.x, p)) {
+      if (checkCollision(birdBox, p)) {
         triggerGameOver(); return;
       }
 

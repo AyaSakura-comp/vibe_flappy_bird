@@ -24,6 +24,7 @@ function mockMesh(geo, mat) {
     scale: { setScalar(s) { this.x = s; this.y = s; this.z = s; }, set(x,y,z) { this.x=x; this.y=y; this.z=z; }, x: 1, y: 1, z: 1 },
     visible: true,
     lookAt() {},
+    updateMatrixWorld() {},
   };
 }
 
@@ -83,6 +84,7 @@ globalThis.window = {
       }
       add(c) { this.children.push(c); }
       lookAt() {}
+      updateMatrixWorld() {}
     },
     BoxGeometry: class { constructor() {} },
     CircleGeometry: class { constructor() {} },
@@ -200,32 +202,32 @@ const laserMod = await import('../js/laser.js');
 
 // ── collision.js ────────────────────────────────────────────────────────
 function makePipe(z, gapTop, gapBot) {
-  return { group: { position: { z } }, gapTop, gapBot };
+  // Return a mock pipe structure compatible with checkCollision
+  return { 
+    group: { position: { z }, updateMatrixWorld: () => {} }, 
+    gapTop, gapBot,
+    topGroup: { position: { x: 0, y: gapTop + 1, z }, updateMatrixWorld: () => {} },
+    botGroup: { position: { x: 0, y: gapBot - 1, z }, updateMatrixWorld: () => {} }
+  };
 }
 
 describe('checkCollision', () => {
-  it('returns false when pipe z < -2.0', () => {
-    assert.equal(checkCollision(0, 0, makePipe(-2.5, 3, -3)), false);
-  });
-  it('returns false when pipe z > 1.5', () => {
-    assert.equal(checkCollision(0, 0, makePipe(2.0, 3, -3)), false);
-  });
-  it('returns false when bird x > 1.1', () => {
-    assert.equal(checkCollision(0, 1.2, makePipe(0, 3, -3)), false);
-    assert.equal(checkCollision(0, -1.2, makePipe(0, 3, -3)), false);
-  });
-  it('returns true when birdY + margin > gapTop', () => {
-    assert.equal(checkCollision(3.41, 0, makePipe(0, 3.5, -3.5)), true);
-  });
-  it('returns true when birdY - margin < gapBot', () => {
-    assert.equal(checkCollision(-3.41, 0, makePipe(0, 3.5, -3.5)), true);
-  });
-  it('returns false when bird is within the gap', () => {
-    assert.equal(checkCollision(0, 0, makePipe(0, 3.5, -3.5)), false);
-  });
-  it('custom margin parameter works', () => {
-    assert.equal(checkCollision(3.4, 0, makePipe(0, 3.5, -3.5), 0.15), true);
-    assert.equal(checkCollision(3.4, 0, makePipe(0, 3.5, -3.5), 0), false);
+  it('checkCollision uses THREE.Box3 intersection', () => {
+    const pipe = makePipe(0, 3, -3);
+    
+    // Box hitting top pipe segment (topGroup is at y=4, mock box is y=3 to 5)
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, 3.5, -0.5),
+      new window.THREE.Vector3(0.5, 4.5, 0.5)
+    );
+    assert.equal(checkCollision(birdBoxHit, pipe), true);
+    
+    // Box safely in the gap (gap is y=3 to -3, mock boxes are at y=4 and y=-4)
+    const birdBoxSafe = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, -0.5, -0.5),
+      new window.THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    assert.equal(checkCollision(birdBoxSafe, pipe), false);
   });
 });
 
@@ -1020,13 +1022,21 @@ describe('overheat system', () => {
 describe('phase collision rules', () => {
   it('solid ship vs pipe = death (checkCollision returns true)', () => {
     const pipe = makePipe(0, 3.5, -3.5);
-    assert.equal(checkCollision(4.0, 0, pipe), true);
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, 4.0, -0.5),
+      new window.THREE.Vector3(0.5, 5.0, 0.5)
+    );
+    assert.equal(checkCollision(birdBoxHit, pipe), true);
   });
 
   it('phased ship vs pipe = death (checkCollision still returns true)', () => {
     // checkCollision has no phasing awareness — pipes always kill
     const pipe = makePipe(0, 3.5, -3.5);
-    assert.equal(checkCollision(4.0, 0, pipe), true);
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, 4.0, -0.5),
+      new window.THREE.Vector3(0.5, 5.0, 0.5)
+    );
+    assert.equal(checkCollision(birdBoxHit, pipe), true);
   });
 
   it('solid ship vs laser = death', () => {

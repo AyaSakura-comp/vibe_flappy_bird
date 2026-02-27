@@ -1,13 +1,16 @@
-import { CONFIG } from './constants.js';
+import * as THREE from 'three';
 
-export function checkCollision(birdY, birdX, pipe, margin = CONFIG.BIRD.BODY_HEIGHT / 2) {
-  const pz = pipe.group.position.z;
-  if (pz > CONFIG.PIPES.HIT_Z_MIN && pz < CONFIG.PIPES.HIT_Z_MAX) {
-    if (Math.abs(birdX) < 1.1) {
-      if (birdY + margin > pipe.gapTop || birdY - margin < pipe.gapBot) {
-        return true;
-      }
-    }
+export function checkCollision(birdBox, pipe) {
+  if (!pipe.topGroup || !pipe.botGroup) return false;
+  
+  pipe.topGroup.updateMatrixWorld(true);
+  pipe.botGroup.updateMatrixWorld(true);
+  
+  const topBox = new THREE.Box3().setFromObject(pipe.topGroup);
+  const botBox = new THREE.Box3().setFromObject(pipe.botGroup);
+  
+  if (birdBox.intersectsBox(topBox) || birdBox.intersectsBox(botBox)) {
+    return true;
   }
   return false;
 }
