@@ -61,10 +61,10 @@ export const CONFIG = {
     SPAWN_CHANCE: 0.35,       // base probability per pipe
     MAX_CHANCE: 0.7,          // cap at 70%
     CHANCE_PER_SCORE: 0.015,  // +1.5% per point scored
-    GAP_FRACTION: 0.25,       // laser height = GAP * 0.25 (25% of gap)
+    GAP_FRACTION: 0.35,       // laser height = GAP * 0.25 (25% of gap)
     WIDTH: 2.0,               // mesh width (matches pipe diameter)
     DEPTH: 0.1,               // mesh Z-depth (3D thickness)
-    SCANLINE_FREQ: 8.0,       // number of color bands across height
+    SCANLINE_FREQ: 50.0,       // number of color bands across height
     SCANLINE_SPEED: 5.0,      // scanline scroll speed
     PULSE_SPEED: 3.0,         // overall brightness pulse speed
     COLOR1: 0xff2200,         // primary laser color (red-orange)

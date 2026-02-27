@@ -17,7 +17,7 @@ export function createLaserNet(gapTop, gapBot) {
   // Laser net: thin box spanning pipe diameter — solid and visible from any angle
   const geo = new THREE.BoxGeometry(CONFIG.LASER.WIDTH, laserHeight, CONFIG.LASER.DEPTH);
   const mat = new THREE.ShaderMaterial({
-    transparent: false,
+    transparent: true,
     uniforms: {
       uTime: { value: 0 },
       uColor1: { value: new THREE.Color(CONFIG.LASER.COLOR1) },
@@ -46,8 +46,14 @@ export function createLaserNet(gapTop, gapBot) {
       void main() {
         float scanline = sin(vUv.y * uScanlineFreq + uTime * uScanlineSpeed) * 0.5 + 0.5;
         float pulse = sin(uTime * uPulseSpeed) * 0.25 + 0.75;
-        vec3 col = mix(uColor1, uColor2, scanline) * pulse;
-        gl_FragColor = vec4(col, 1.0);
+        
+        // Apply pulse only to COLOR2
+        vec3 col2_pulsed = uColor2 * pulse;
+        vec3 col = mix(uColor1, col2_pulsed, scanline);
+        
+        // Add transparency to COLOR1. COLOR2's alpha also pulses.
+        float alpha = mix(0.4, 1.0 * pulse, scanline);
+        gl_FragColor = vec4(col, alpha);
       }
     `,
   });
