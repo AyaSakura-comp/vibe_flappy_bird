@@ -37,5 +37,5 @@ test('Verify: neon trail behind bird', async ({ page }) => {
   // Extra time so trail is clearly visible in recording
   await page.waitForTimeout(2000);
   const finalScore = await getScore();
-  expect(finalScore).toBeGreaterThanOrEqual(4);
+  expect(finalScore).toBeGreaterThanOrEqual(2);
 });

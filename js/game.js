@@ -74,7 +74,6 @@ const inputHintsEl = document.getElementById('input-hints');
 
 // ── Input ────────────────────────────────────────────────────────────────
 let lastInputTime = 0;
-let lastTouchTime = 0;
 const INPUT_DEBOUNCE = 20; // ms
 
 function handleInput() {
@@ -139,68 +138,30 @@ document.addEventListener('keyup', (e) => {
   if (e.code === 'KeyD') setPhasing(false);
 });
 
-// Touch — split screen: left = flap, right = phase
-// touchend checks e.touches (all remaining fingers) — not changedTouches —
-// to avoid unphasing when only one of multiple right-side fingers lifts.
-// NOTE: passive:false + preventDefault() is intentional — prevents the browser
-// from synthesizing mousedown/mouseup after touch, which would cause a double-flap.
-document.addEventListener('touchstart', (e) => {
-  e.preventDefault(); // suppress synthetic mouse events (double-flap fix)
-  lastTouchTime = performance.now();
+// ── Pointer Input (Unified) ──────────────────────────────────────────────
+const activePointers = new Map();
 
-  let leftSideTouched = false;
-  let rightSideTouched = false;
-
-  for (const touch of e.changedTouches) {
-    const xRatio = touch.clientX / window.innerWidth;
-    if (xRatio < 0.5) leftSideTouched = true;
-    else rightSideTouched = true;
-  }
-
-  // Handle restart first
-  if (gameOver && (leftSideTouched || rightSideTouched)) {
-    tryRestart();
-    return;
-  }
-
-  // Action: Phase takes precedence if both touched in same event, or just handle both
-  if (leftSideTouched) handleInput();
-  if (rightSideTouched) setPhasing(true);
-}, { passive: false });
-
-document.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  lastTouchTime = performance.now();
+function handlePointerUp(e) {
+  activePointers.delete(e.pointerId);
+  
   let rightSideStillHeld = false;
-  for (const touch of e.touches) {
-    if (touch.clientX / window.innerWidth >= 0.5) {
+  for (const xRatio of activePointers.values()) {
+    if (xRatio >= 0.5) {
       rightSideStillHeld = true;
       break;
     }
   }
   if (!rightSideStillHeld) setPhasing(false);
-}, { passive: false });
+}
 
-document.addEventListener('touchcancel', (e) => {
-  e.preventDefault();
-  lastTouchTime = performance.now();
-  let rightSideStillHeld = false;
-  for (const touch of e.touches) {
-    if (touch.clientX / window.innerWidth >= 0.5) {
-      rightSideStillHeld = true;
-      break;
-    }
-  }
-  if (!rightSideStillHeld) setPhasing(false);
-}, { passive: false });
-
-/*
-// Mouse — split screen: left = flap, right = phase
-document.addEventListener('mousedown', (e) => {
-  // Suppress synthetic mouse events on mobile
-  if (performance.now() - lastTouchTime < 500) return;
-
+document.addEventListener('pointerdown', (e) => {
   const xRatio = e.clientX / window.innerWidth;
+  activePointers.set(e.pointerId, xRatio);
+  
+  if (e.target.setPointerCapture) {
+    e.target.setPointerCapture(e.pointerId);
+  }
+
   if (xRatio < 0.5) {
     gameOver ? tryRestart() : handleInput();
   } else {
@@ -208,12 +169,11 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-document.addEventListener('mouseup', (e) => {
-  if (performance.now() - lastTouchTime < 500) return;
-  const xRatio = e.clientX / window.innerWidth;
-  if (xRatio >= 0.5) setPhasing(false);
-});
-*/
+document.addEventListener('pointerup', handlePointerUp);
+document.addEventListener('pointercancel', handlePointerUp);
+
+// Prevent context menu from interrupting multi-touch gameplay
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function updateCameraProjection() {
   const aspect = window.innerWidth / window.innerHeight;
@@ -258,7 +218,7 @@ function triggerGameOver() {
   const finalScore = score;
   setTimeout(() => {
     overlayTitle.textContent = 'SYSTEM FAILURE';
-    overlayMsg.textContent   = '[ SCORE: ' + finalScore + ' ]  //  CLICK TO REBOOT';
+    overlayMsg.textContent   = '[ SCORE: ' + finalScore + ' ]  //  CLICK OR TAP TO REBOOT';
     overlayEl.classList.remove('hidden');
   }, 900);
 }
@@ -275,7 +235,7 @@ function restartGame() {
   wasPhasing = false;
   scoreEl.textContent = '0';
   overlayTitle.textContent = 'CYBER FLAP';
-  overlayMsg.textContent   = '[ CLICK OR SPACE TO JACK IN ]';
+  overlayMsg.textContent   = '[ CLICK, TAP OR SPACE TO JACK IN ]';
   overlayEl.classList.remove('hidden');
 
   if (inputHintsEl) inputHintsEl.style.display = 'flex';

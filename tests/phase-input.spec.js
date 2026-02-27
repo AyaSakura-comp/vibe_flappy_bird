@@ -72,26 +72,24 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
 
       // Dispatch on document — matches where the game listener is attached
       const target = document;
-      const touch = new Touch({
-        identifier: Date.now(),
-        target: document.body,
+      const pointerDown = new PointerEvent('pointerdown', {
+        pointerId: 101,
         clientX: window.innerWidth * 0.25, // left quarter
         clientY: window.innerHeight * 0.5,
-        radiusX: 10, radiusY: 10,
-        rotationAngle: 0, force: 1,
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
       });
-      target.dispatchEvent(new TouchEvent('touchstart', {
-        changedTouches: [touch],
-        touches: [touch],
+      const pointerUp = new PointerEvent('pointerup', {
+        pointerId: 101,
+        clientX: window.innerWidth * 0.25,
+        clientY: window.innerHeight * 0.5,
         bubbles: true,
         cancelable: true,
-      }));
-      target.dispatchEvent(new TouchEvent('touchend', {
-        changedTouches: [touch],
-        touches: [],
-        bubbles: true,
-        cancelable: true,
-      }));
+        pointerType: 'touch',
+      });
+      target.dispatchEvent(pointerDown);
+      target.dispatchEvent(pointerUp);
 
       // Wait for next frame for game loop to update __FLAPPY_VELOCITY
       requestAnimationFrame(() => {
@@ -109,4 +107,57 @@ test('Touch tap does not synthesize a mousedown event (double-flap regression)',
   expect(velocityAfterTouch).toBeLessThan(0);
 
   await context.close();
+});
+
+test('Simultaneous flap and phase with multiple pointers', async ({ page }) => {
+  await page.goto('http://localhost:3457/index.html');
+  await page.waitForSelector('canvas');
+  await page.evaluate(() => window.__FLAPPY_START_QUIET());
+  await page.waitForFunction(() => window.__FLAPPY_STARTED === true, { timeout: 5000 });
+
+  // Use page.evaluate to simulate simultaneous pointers
+  await page.evaluate(() => {
+    // 1. Phasing pointer on right
+    const p1Down = new PointerEvent('pointerdown', {
+      pointerId: 90,
+      clientX: window.innerWidth * 0.8,
+      clientY: window.innerHeight * 0.5,
+      bubbles: true
+    });
+    document.dispatchEvent(p1Down);
+  });
+  
+  await page.waitForFunction(() => window.__FLAPPY_PHASING === true);
+
+  // 2. Flapping pointer on left
+  await page.evaluate(() => {
+    const p2Down = new PointerEvent('pointerdown', {
+      pointerId: 91,
+      clientX: window.innerWidth * 0.2,
+      clientY: window.innerHeight * 0.5,
+      bubbles: true
+    });
+    const p2Up = new PointerEvent('pointerup', {
+      pointerId: 91,
+      bubbles: true
+    });
+    document.dispatchEvent(p2Down);
+    document.dispatchEvent(p2Up);
+  });
+  
+  // Verify bird gained velocity while still phasing
+  const vel = await page.evaluate(() => window.__FLAPPY_VELOCITY);
+  expect(vel).toBeLessThan(0);
+  expect(await page.evaluate(() => window.__FLAPPY_PHASING)).toBe(true);
+
+  // Release the phasing pointer
+  await page.evaluate(() => {
+    const upEvent = new PointerEvent('pointerup', {
+      pointerId: 90,
+      bubbles: true
+    });
+    document.dispatchEvent(upEvent);
+  });
+  
+  expect(await page.evaluate(() => window.__FLAPPY_PHASING)).toBe(false);
 });

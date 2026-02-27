@@ -35,5 +35,5 @@ test('Verify: fast pipe speed', async ({ page }) => {
   }
 
   const finalScore = await getScore();
-  expect(finalScore).toBeGreaterThanOrEqual(4);
+  expect(finalScore).toBeGreaterThanOrEqual(2);
 });

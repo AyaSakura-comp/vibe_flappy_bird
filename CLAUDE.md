@@ -43,13 +43,13 @@ package.json
 - **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
 - **Centralized Config**: All game tuning (Gravity, Speed, Colors, Phase, and Lasers) is managed in `js/constants.js`.
 - **Mechanics**:
-  - **Phase Dive**: Holding 'D' (or right-screen) makes the ship translucent and immune to **Laser Nets**.
+  - **Phase Dive**: Holding 'D' (or right-screen click) makes the ship translucent and immune to **Laser Nets**.
   - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
   - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes.
 - **Visual Identity (Synthwave)**:
-  - **UI**: Cyberpunk-themed overlays with dynamic input hints.
+  - **UI**: Cyberpunk-themed overlays with dynamic click-input hints.
   - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
-- **Mobile Input**: Touch handlers use `{ passive: false }` + `e.preventDefault()` on `touchstart`/`touchend` to suppress the browser's synthetic `mousedown` (prevents double-flap). `touch-action: none` on `body` reinforces this at the CSS compositor layer.
+- **Input**: Split-screen mouse support (left=flap, right=phase) and keyboard support.
 - **Performance**: Optimized game loop with DOM element caching and debounced VFX spawning.
 - **Test API**: Exposed on `window.__FLAPPY_*` for automated E2E testing and AI bot control.
   - `__FLAPPY_BIRD_Y`, `__FLAPPY_VELOCITY`, `__FLAPPY_SCORE`, `__FLAPPY_STARTED`, `__FLAPPY_OVER`
