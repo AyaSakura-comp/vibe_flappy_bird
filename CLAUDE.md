@@ -7,8 +7,8 @@ A high-intensity, synthwave-themed 3D Flappy Bird clone built with Three.js (r12
 ```
 index.html          — HTML/CSS UI + Three.js Import Map
 js/
-  constants.js      — Centralized CONFIG: Physics, Pipes, Visuals, Phase, and Lasers
-  collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin)
+  constants.js      — Centralized CONFIG: Physics, Bird, Pipes, Visuals, Phase, and Lasers
+  collision.js      — Pure function: checkCollision(birdY, birdX, pipe, margin) — margin derived from CONFIG.BIRD.BODY_HEIGHT
   explosion.js      — Particle system: spawnExplosion(), updateExplosion()
   audio.js          — Audio manager: Background music and SFX (Phase, Laser)
   bird.js           — createBird(scene) → { birdGroup, eng }
@@ -40,11 +40,12 @@ package.json
 ## Architecture & Design
 
 - **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
-- **Centralized Config**: All game tuning (Gravity, Speed, Colors, Phase, and Lasers) is managed in `js/constants.js`.
+- **Centralized Config**: All game tuning (Gravity, Speed, Bird, Pipes, Colors, Phase, and Lasers) is managed in `js/constants.js`.
 - **Mechanics**:
   - **Phase Dive**: Holding 'D' (or right-screen pointer) makes the ship translucent and immune to **Laser Nets**.
   - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
-  - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes.
+  - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes. Laser and pipe collision Z-ranges are independently tunable.
+  - **Bird Hitbox**: Collision margin is derived from `CONFIG.BIRD.BODY_HEIGHT` (coupled to mesh geometry).
 - **Visual Identity (Synthwave)**:
   - **UI**: Cyberpunk-themed overlays with dynamic click/tap-input hints.
   - **Post-Processing**: Heavy stack including high-intensity Bloom, Film Grain, and Scanlines.
