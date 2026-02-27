@@ -11,6 +11,8 @@ export const CONFIG = {
     SPACING: 4.5,
     SPAWN_Z: -31.0,   // Aligned with prefill: 5.0 - 8 * 4.5 = -31.0
     REMOVE_Z: 15.0,
+    HIT_Z_MIN: -2.0,  // collision zone start (pipe approaching bird)
+    HIT_Z_MAX: 1.5,   // collision zone end (pipe past bird)
     Y_PATTERN: [0, 2.0, -2.0, 1.0, -1.0]
   },
   VISUALS: {

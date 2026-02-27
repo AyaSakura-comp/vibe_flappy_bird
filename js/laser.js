@@ -75,7 +75,7 @@ export function updateLaserShader(mesh, time) {
 export function checkLaserCollision(birdY, pipe, margin = 0.1) {
   if (!pipe.laser) return false;
   const pz = pipe.group.position.z;
-  if (pz <= -2.0 || pz >= 1.5) return false;
+  if (pz <= CONFIG.PIPES.HIT_Z_MIN || pz >= CONFIG.PIPES.HIT_Z_MAX) return false;
   const { hitTop, hitBot } = pipe.laser;
   if (birdY - margin < hitTop && birdY + margin > hitBot) return true;
   return false;
