@@ -14,8 +14,6 @@ export const CONFIG = {
     SPACING: 4.5,
     SPAWN_Z: -31.0,   // Aligned with prefill: 5.0 - 8 * 4.5 = -31.0
     REMOVE_Z: 15.0,
-    HIT_Z_MIN: -2.0,  // collision zone start (pipe approaching bird)
-    HIT_Z_MAX: 1.5,   // collision zone end (pipe past bird)
     Y_PATTERN: [0, 2.0, -2.0, 1.0, -1.0]
   },
   VISUALS: {
@@ -64,8 +62,6 @@ export const CONFIG = {
     MAX_CHANCE: 0.7,          // cap at 70%
     CHANCE_PER_SCORE: 0.015,  // +1.5% per point scored
     GAP_FRACTION: 0.25,       // laser height = GAP * 0.25 (25% of gap)
-    HIT_Z_MIN: -0.05,         // laser collision zone start
-    HIT_Z_MAX: 0.05,          // laser collision zone end
     WIDTH: 2.0,               // mesh width (matches pipe diameter)
     DEPTH: 0.1,               // mesh Z-depth (3D thickness)
     SCANLINE_FREQ: 8.0,       // number of color bands across height
