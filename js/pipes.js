@@ -64,7 +64,7 @@ export function spawnPipe(scene, spawnZ = PIPE_SPAWN_Z, score = 0) {
     laser = laserData;
   }
 
-  pipes.push({ group: pipeGroup, gapTop, gapBot, scored: false, laser });
+  pipes.push({ group: pipeGroup, topGroup, botGroup, gapTop, gapBot, scored: false, laser });
 }
 
 export function prefillPipes(scene) {

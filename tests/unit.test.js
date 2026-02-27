@@ -586,6 +586,16 @@ describe('pipes', () => {
     assert.equal(pipesMod.pipes.length, 1);
   });
 
+  it('spawnPipe exposes topGroup and botGroup on the pipe object', () => {
+    const scene = mockScene();
+    pipesMod.resetPipes(scene);
+    pipesMod.spawnPipe(scene, -18);
+    const pipe = pipesMod.pipes[0];
+    assert.ok(pipe.topGroup, 'topGroup should be exposed');
+    assert.ok(pipe.botGroup, 'botGroup should be exposed');
+    assert.ok(pipe.topGroup.position, 'topGroup should have position');
+  });
+
   it('spawnPipe sets gapTop and gapBot based on PIPE_GAP', () => {
     const scene = mockScene();
     pipesMod.resetPipes(scene);
