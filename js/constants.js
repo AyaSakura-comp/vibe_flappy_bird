@@ -73,9 +73,9 @@ export const CONFIG = {
   SPEED_SCALING: {
     INITIAL_PIPE_SPEED: 0.08,       // starting pipe speed
     INITIAL_PARALLAX_SPEED: 0.025,  // starting parallax speed
-    PIPES_PER_INCREASE: 5,          // increase speed every N pipes scored
-    PIPE_SPEED_INCREMENT: 0.01,     // pipe speed added per step
-    PARALLAX_INCREMENT: 0.003,      // parallax speed added per step (keeps ~31% ratio)
+    PIPES_PER_INCREASE: 1,          // increase speed every N pipes scored
+    PIPE_SPEED_INCREMENT: 0.001,     // pipe speed added per step
+    PARALLAX_INCREMENT: 0.00075,      // parallax speed added per step (keeps ~31% ratio)
     MAX_PIPE_SPEED: 0.24,           // cap pipe speed (3x initial)
     MAX_PARALLAX_SPEED: 0.075,      // cap parallax speed (3x initial)
   },

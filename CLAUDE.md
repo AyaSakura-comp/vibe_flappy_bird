@@ -19,7 +19,8 @@ js/
   postprocessing.js — EffectComposer: Bloom, Color Grading, Vignette, Film Grain, Chroma Aberration
   game.js           — Main orchestrator: Game loop, State management, Input, Test API
 tests/
-  unit.test.js      — 96 unit tests (node:test) covering all modules
+  unit.test.js      — 88 unit tests (node:test) covering all modules
+  audio.spec.js     — Audio regression: verify fade-in on start and fade-out on game over
   high-score.spec.js — Physics-predictive AI pilot: navigates 20+ pipes (updated for lasers)
   phase-dive-pilot.spec.js — Specialized Phase Dive pilot: handles laser navigation
   collision-phase.spec.js — Collision rules: solid/phased vs pipe/laser
@@ -30,7 +31,14 @@ tests/
   flappy.spec.js    — Survival test: simple AI navigates ≥10 pipes
   collision.spec.js — Collision test: bird dies on pipe contact
   golden.spec.js    — Golden test: verify SYSTEM FAILURE state
-docs/plans/         — Design and implementation plan documents
+docs/plans/         — Design and implementation plans:
+  2026-02-22-3d-flappy-bird.md    — Initial 3D engine and game loop
+  2026-02-22-fix-gemini-verification.md — Automated test reliability fixes
+  2026-02-23-game-feel-design.md — Particle effects and screen shake
+  2026-02-24-phase-dive.md       — Core Phasing and Laser Net design
+  2026-02-26-speed-scaling.md    — Variable speed ramping logic
+  2026-02-26-mobile-double-flap-fix.md — Fix for mobile double-flap bug
+  2026-02-27-three-box3-collision.md — Move to pure THREE.Box3 geometry collision
 golden/
   final-phase-dive.webm — Complete feature verification video (Cumulative)
   baseline-pre-phase-dive.webm — Reference video before Phase Dive
