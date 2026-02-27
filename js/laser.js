@@ -77,13 +77,11 @@ export function updateLaserShader(mesh, time) {
  * @param {number} margin - bird hitbox half-height (default 0.1)
  * @returns {boolean}
  */
-export function checkLaserCollision(birdY, pipe, margin = CONFIG.BIRD.BODY_HEIGHT / 2) {
+export function checkLaserCollision(birdBox, pipe) {
   if (!pipe.laser) return false;
-  const pz = pipe.group.position.z;
-  if (pz <= CONFIG.LASER.HIT_Z_MIN || pz >= CONFIG.LASER.HIT_Z_MAX) return false;
-  const { hitTop, hitBot } = pipe.laser;
-  if (birdY - margin < hitTop && birdY + margin > hitBot) return true;
-  return false;
+  pipe.laser.mesh.updateMatrixWorld(true);
+  const laserBox = new THREE.Box3().setFromObject(pipe.laser.mesh);
+  return birdBox.intersectsBox(laserBox);
 }
 
 /**

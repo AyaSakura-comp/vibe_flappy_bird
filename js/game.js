@@ -100,8 +100,9 @@ function tryRestart() {
 // Called by both setPhasing(false) and the stamina-depletion path in the game loop.
 function forceUnphase() {
   if (!phasing) return;
+  const birdBox = new THREE.Box3().setFromObject(birdGroup);
   for (const p of pipes) {
-    if (checkLaserCollision(birdGroup.position.y, p)) {
+    if (checkLaserCollision(birdBox, p)) {
       phasing = false;
       playLaserDeath(sfx);
       triggerGameOver();
@@ -342,9 +343,14 @@ function loop(now) {
     const spawnMs   = Math.round(CONFIG.PIPES.SPACING / (pipeSpeed * 60) * 1000);
     if (now - lastSpawn >= spawnMs) { spawnPipe(scene, undefined, score); lastSpawn = now; }
 
+    birdGroup.updateMatrixWorld(true);
+    const birdBox = new THREE.Box3().setFromObject(birdGroup);
+
     for (let i = pipes.length - 1; i >= 0; i--) {
       const p = pipes[i];
       p.group.position.z += pipeSpeed * dt;
+      p.group.updateMatrixWorld(true);
+      
       if (p.laser) updateLaserShader(p.laser.mesh, now * 0.001);
 
       if (!p.scored && p.group.position.z > 1) {
@@ -365,7 +371,7 @@ function loop(now) {
       }
 
       // Laser collision — phasing bypasses
-      if (!phasing && checkLaserCollision(birdGroup.position.y, p)) {
+      if (!phasing && checkLaserCollision(birdBox, p)) {
         playLaserDeath(sfx);
         triggerGameOver(); return;
       }

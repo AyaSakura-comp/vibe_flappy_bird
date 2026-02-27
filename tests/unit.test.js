@@ -53,6 +53,28 @@ globalThis.document = globalThis.document || {
 
 globalThis.window = {
   THREE: {
+    Box3: class {
+      constructor(min, max) {
+        this.min = min || mockVec3(Infinity, Infinity, Infinity);
+        this.max = max || mockVec3(-Infinity, -Infinity, -Infinity);
+      }
+      setFromObject(obj) {
+        if (obj && obj.position) {
+          // Fake bounds for tests
+          this.min = mockVec3(obj.position.x - 1, obj.position.y - 1, obj.position.z - 1);
+          this.max = mockVec3(obj.position.x + 1, obj.position.y + 1, obj.position.z + 1);
+        }
+        return this;
+      }
+      intersectsBox(box) {
+        return !(box.max.x < this.min.x || box.min.x > this.max.x ||
+                 box.max.y < this.min.y || box.min.y > this.max.y ||
+                 box.max.z < this.min.z || box.min.z > this.max.z);
+      }
+    },
+    Vector3: class {
+      constructor(x, y, z) { this.x = x||0; this.y = y||0; this.z = z||0; }
+    },
     Group: class {
       constructor() {
         this.children = [];
@@ -869,52 +891,33 @@ describe('laser.js', () => {
       'laser should be centered in gap');
   });
 
-  it('checkLaserCollision returns true when solid ship overlaps laser', () => {
-    const pipe = {
-      group: { position: { z: 0 } },
-      gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
-    };
-    // Bird at center of gap (y=0) — should overlap laser (centered at 0)
-    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), true);
-  });
-
-  it('checkLaserCollision returns false when bird is above laser', () => {
-    const pipe = {
-      group: { position: { z: 0 } },
-      gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
-    };
-    // Bird well above laser center (laser is only 25% of 7.5 = 1.875 tall, centered at 0)
-    // hitTop = 0.9375, hitBot = -0.9375. Bird at y=3.0 with margin=0.1: y-margin=2.9 > hitTop=0.9375
-    assert.equal(laserMod.checkLaserCollision(3.0, pipe, 0.1), false);
-  });
-
-  it('checkLaserCollision returns false when bird is below laser', () => {
-    const pipe = {
-      group: { position: { z: 0 } },
-      gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
-    };
-    assert.equal(laserMod.checkLaserCollision(-3.0, pipe, 0.1), false);
+  it('checkLaserCollision uses THREE.Box3 intersection', () => {
+    const laserData = laserMod.createLaserNet(2, -2);
+    // Mock the laser mesh position so setFromObject works
+    laserData.mesh.position = { x: 0, y: 0, z: 0 };
+    
+    const pipe = { laser: laserData };
+    
+    // Mock bird Box3 directly overlapping the laser
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, -0.5, -0.5),
+      new window.THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    // Since setFromObject on mock Box3 adds +/-1, laser box is [-1,1]
+    assert.equal(laserMod.checkLaserCollision(birdBoxHit, pipe), true);
+    
+    // Mock bird Box3 completely outside the laser
+    const birdBoxSafe = new window.THREE.Box3(
+      new window.THREE.Vector3(10, 10, 10),
+      new window.THREE.Vector3(11, 11, 11)
+    );
+    assert.equal(laserMod.checkLaserCollision(birdBoxSafe, pipe), false);
   });
 
   it('checkLaserCollision returns false when pipe has no laser', () => {
-    const pipe = {
-      group: { position: { z: 0 } },
-      gapTop: 3.75, gapBot: -3.75,
-      laser: null,
-    };
-    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), false);
-  });
-
-  it('checkLaserCollision returns false when pipe z is out of range', () => {
-    const pipe = {
-      group: { position: { z: -5 } },
-      gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
-    };
-    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), false);
+    const pipe = { laser: null };
+    const birdBoxHit = new window.THREE.Box3();
+    assert.equal(laserMod.checkLaserCollision(birdBoxHit, pipe), false);
   });
 
   it('shouldSpawnLaser returns false during warmup', () => {
@@ -1027,40 +1030,58 @@ describe('phase collision rules', () => {
   });
 
   it('solid ship vs laser = death', () => {
+    const laserData = laserMod.createLaserNet(3.75, -3.75);
+    laserData.mesh.position = { x: 0, y: 0, z: 0 };
     const pipe = {
       group: { position: { z: 0 } },
       gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
+      laser: laserData,
     };
-    assert.equal(laserMod.checkLaserCollision(0, pipe, 0.1), true);
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, -0.5, -0.5),
+      new window.THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    assert.equal(laserMod.checkLaserCollision(birdBoxHit, pipe), true);
   });
 
   it('phased ship vs laser = safe (game.js gates on !phasing)', () => {
     // checkLaserCollision itself returns true (it doesn't know about phasing)
     // The game loop guards: if (!phasing && checkLaserCollision) → die
     // So we verify the guard logic: when phasing=true, skip collision
+    const laserData = laserMod.createLaserNet(3.75, -3.75);
+    laserData.mesh.position = { x: 0, y: 0, z: 0 };
     const pipe = {
       group: { position: { z: 0 } },
       gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
+      laser: laserData,
     };
-    const laserHit = laserMod.checkLaserCollision(0, pipe, 0.1);
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, -0.5, -0.5),
+      new window.THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    const laserHit = laserMod.checkLaserCollision(birdBoxHit, pipe);
     const phasing = true;
     const wouldDie = !phasing && laserHit;
     assert.equal(wouldDie, false, 'phased ship should not die from laser');
   });
 
   it('unphase-while-overlapping laser = death', () => {
+    const laserData = laserMod.createLaserNet(3.75, -3.75);
+    laserData.mesh.position = { x: 0, y: 0, z: 0 };
     const pipe = {
       group: { position: { z: 0 } },
       gapTop: 3.75, gapBot: -3.75,
-      laser: laserMod.createLaserNet(3.75, -3.75),
+      laser: laserData,
     };
     // Simulate: was phasing (true → false), check laser overlap
     const wasPhasing = true;
     const nowPhasing = false;
     const transitioning = wasPhasing && !nowPhasing;
-    const overlapping = laserMod.checkLaserCollision(0, pipe, 0.1);
+    const birdBoxHit = new window.THREE.Box3(
+      new window.THREE.Vector3(-0.5, -0.5, -0.5),
+      new window.THREE.Vector3(0.5, 0.5, 0.5)
+    );
+    const overlapping = laserMod.checkLaserCollision(birdBoxHit, pipe);
     assert.equal(transitioning && overlapping, true, 'should trigger death');
   });
 });
