@@ -15,14 +15,16 @@ export function createLaserNet(gapTop, gapBot) {
   const hitBot = gapCenter - laserHeight / 2;
 
   // Laser net: thin box spanning pipe diameter — solid and visible from any angle
-  // Box depth 0.1 gives it 3D presence; width 2.0 matches pipe diameter
-  const geo = new THREE.BoxGeometry(2.0, laserHeight, 0.1);
+  const geo = new THREE.BoxGeometry(CONFIG.LASER.WIDTH, laserHeight, CONFIG.LASER.DEPTH);
   const mat = new THREE.ShaderMaterial({
     transparent: false,
     uniforms: {
       uTime: { value: 0 },
-      uColor1: { value: new THREE.Color(0xff2200) },
-      uColor2: { value: new THREE.Color(0xffcc00) },
+      uColor1: { value: new THREE.Color(CONFIG.LASER.COLOR1) },
+      uColor2: { value: new THREE.Color(CONFIG.LASER.COLOR2) },
+      uScanlineFreq: { value: CONFIG.LASER.SCANLINE_FREQ },
+      uScanlineSpeed: { value: CONFIG.LASER.SCANLINE_SPEED },
+      uPulseSpeed: { value: CONFIG.LASER.PULSE_SPEED },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -37,10 +39,13 @@ export function createLaserNet(gapTop, gapBot) {
       uniform float uTime;
       uniform vec3 uColor1;
       uniform vec3 uColor2;
+      uniform float uScanlineFreq;
+      uniform float uScanlineSpeed;
+      uniform float uPulseSpeed;
       varying vec2 vUv;
       void main() {
-        float scanline = sin(vUv.y * 8.0 + uTime * 5.0) * 0.5 + 0.5;
-        float pulse = sin(uTime * 3.0) * 0.25 + 0.75;
+        float scanline = sin(vUv.y * uScanlineFreq + uTime * uScanlineSpeed) * 0.5 + 0.5;
+        float pulse = sin(uTime * uPulseSpeed) * 0.25 + 0.75;
         vec3 col = mix(uColor1, uColor2, scanline) * pulse;
         gl_FragColor = vec4(col, 1.0);
       }

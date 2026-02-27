@@ -66,6 +66,13 @@ export const CONFIG = {
     GAP_FRACTION: 0.25,       // laser height = GAP * 0.25 (25% of gap)
     HIT_Z_MIN: -0.05,         // laser collision zone start
     HIT_Z_MAX: 0.05,          // laser collision zone end
+    WIDTH: 2.0,               // mesh width (matches pipe diameter)
+    DEPTH: 0.1,               // mesh Z-depth (3D thickness)
+    SCANLINE_FREQ: 8.0,       // number of color bands across height
+    SCANLINE_SPEED: 5.0,      // scanline scroll speed
+    PULSE_SPEED: 3.0,         // overall brightness pulse speed
+    COLOR1: 0xff2200,         // primary laser color (red-orange)
+    COLOR2: 0xffcc00,         // secondary laser color (yellow)
   },
   ENVIRONMENT: {
     PARALLAX_SPEED: 0.025,

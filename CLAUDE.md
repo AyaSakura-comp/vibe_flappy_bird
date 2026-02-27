@@ -40,11 +40,11 @@ package.json
 ## Architecture & Design
 
 - **ES Modules & Import Maps**: No bundler. Three.js and its JSM examples are loaded via a native import map in `index.html`.
-- **Centralized Config**: All game tuning (Gravity, Speed, Bird, Pipes, Colors, Phase, and Lasers) is managed in `js/constants.js`.
+- **Centralized Config**: All game tuning (Gravity, Speed, Bird, Pipes, Colors, Phase, and Lasers — including shader parameters like colors, frequencies, and speeds) is managed in `js/constants.js`.
 - **Mechanics**:
   - **Phase Dive**: Holding 'D' (or right-screen pointer) makes the ship translucent and immune to **Laser Nets**.
   - **Overheat System**: Phasing drains stamina; hitting zero triggers a 1s cooldown. Dying inside a laser during depletion causes instant death.
-  - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes. Laser and pipe collision Z-ranges are independently tunable.
+  - **Laser Nets**: Obstacles in pipe gaps using pulsating neon shaders and 3D hitboxes. Laser and pipe collision Z-ranges are independently tunable. Visual properties (width, depth, scanline frequency/speed, pulse speed, colors) are all in `CONFIG.LASER`.
   - **Bird Hitbox**: Collision margin is derived from `CONFIG.BIRD.BODY_HEIGHT` (coupled to mesh geometry).
 - **Visual Identity (Synthwave)**:
   - **UI**: Cyberpunk-themed overlays with dynamic click/tap-input hints.
@@ -57,6 +57,10 @@ package.json
   - `__FLAPPY_PHASING`, `__FLAPPY_PHASE_STAMINA`, `__FLAPPY_PHASE_COOLDOWN`
   - `__FLAPPY_PHASE_ACTIVATE()`, `__FLAPPY_PHASE_DEACTIVATE()`
   - `__FLAPPY_START_QUIET`, `__FLAPPY_RESTART`, `__FLAPPY_CLEAR_PIPES`, `__FLAPPY_GRAVITY_SCALE`
+
+## Implementation Principles
+
+- **Centralize all constants to `js/constants.js`**: Never hardcode magic numbers (dimensions, speeds, colors, shader parameters) in module files. All tunable values belong in `CONFIG.*` so they can be adjusted from a single source of truth. Pass shader constants as uniforms referencing CONFIG values.
 
 ## Running
 
