@@ -9,7 +9,6 @@ export function createAudio() {
 export function playBgm(audio) {
   audio.volume = 0;
   audio.play().catch((e) => { console.error('Play fail:', e); });
-  console.log('playBgm: start fadeIn');
   fadeInBgm(audio, 2000);
 }
 
@@ -17,35 +16,31 @@ export function fadeInBgm(audio, durationMs = 2000) {
   const targetVolume = 0.6;
   const startTime = performance.now();
 
-  function tick(now) {
-    const elapsed = now - startTime;
+  const timer = setInterval(() => {
+    const elapsed = performance.now() - startTime;
     const progress = Math.min(elapsed / durationMs, 1);
     audio.volume = progress * targetVolume;
-    console.log('fadeInBgm: progress=', progress, 'vol=', audio.volume);
 
-    if (progress < 1) {
-      requestAnimationFrame(tick);
+    if (progress >= 1) {
+      clearInterval(timer);
     }
-  }
-  requestAnimationFrame(tick);
+  }, 16);
 }
 
 export function fadeOutBgm(audio, durationMs = 1000) {
   const startVolume = audio.volume;
   const startTime = performance.now();
 
-  function tick(now) {
-    const elapsed = now - startTime;
+  const timer = setInterval(() => {
+    const elapsed = performance.now() - startTime;
     const progress = Math.min(elapsed / durationMs, 1);
     audio.volume = startVolume * (1 - progress);
 
-    if (progress < 1) {
-      requestAnimationFrame(tick);
-    } else {
+    if (progress >= 1) {
+      clearInterval(timer);
       audio.pause();
     }
-  }
-  requestAnimationFrame(tick);
+  }, 16);
 }
 
 export function pauseBgm(audio) {
